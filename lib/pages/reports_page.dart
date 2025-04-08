@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/app_state.dart';
+import 'package:intl/intl.dart';
+import '../models/app_state.dart' hide EnergyAlert;
 import '../theme.dart';
+import '../widgets/usage_chart.dart';
+import '../widgets/report_charts.dart';
+import '../models/reports/energy_report_model.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -12,14 +16,65 @@ class ReportsPage extends StatefulWidget {
 
 class _ReportsPageState extends State<ReportsPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
   final List<String> _timeRanges = ['Day', 'Week', 'Month', 'Year'];
   String _selectedTimeRange = 'Week';
+
+  // Controllers for tabs
+  late TabController _tabController;
+
+  // State for date selection
+  DateTime _selectedDate = DateTime.now();
+
+  // State for comparison toggle
+  bool _compareWithPrevious = false;
+
+  // Report data
+  late List<EnergyReportData> _reportData;
+  late Map<String, Color> _categoryColorMap;
+  int _selectedDataPointIndex = -1;
+
+  // Tips and alerts
+  late List<EnergySavingTip> _energySavingTips;
+  late List<EnergyAlert> _energyAlerts;
+  late List<DeviceEnergyInfo> _deviceEnergyList;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  void _loadData() {
+    // Load appropriate data based on selected time range
+    switch (_selectedTimeRange) {
+      case 'Day':
+        _reportData = EnergyReportData.generateDailyData();
+        break;
+      case 'Week':
+        _reportData = EnergyReportData.generateWeeklyData();
+        break;
+      case 'Month':
+        _reportData = EnergyReportData.generateMonthlyData();
+        break;
+      case 'Year':
+        _reportData = EnergyReportData.generateYearlyData();
+        break;
+    }
+
+    // Set up color map for categories
+    _categoryColorMap = {
+      'HVAC': Colors.blue,
+      'Appliance': Colors.green,
+      'Light': Colors.amber,
+      'Water': Colors.red,
+      'Other': Colors.purple,
+    };
+
+    // Load tips and alerts
+    _energySavingTips = EnergySavingTip.generateTips();
+    _energyAlerts = EnergyAlert.generateAlerts();
+    _deviceEnergyList = DeviceEnergyInfo.generateDeviceList();
   }
 
   @override
@@ -28,15 +83,177 @@ class _ReportsPageState extends State<ReportsPage>
     super.dispose();
   }
 
+  void _onTimeRangeChanged(String range) {
+    setState(() {
+      _selectedTimeRange = range;
+      _loadData();
+    });
+  }
+
+  void _selectDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+      });
+    }
+  }
+
+  void _toggleComparison() {
+    setState(() {
+      _compareWithPrevious = !_compareWithPrevious;
+    });
+  }
+
+  void _exportReport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Report exported successfully!'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppTheme.primaryColor,
+      ),
+    );
+  }
+
+  void _scheduleReport() {
+    // Show a dialog to schedule reports
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Schedule Regular Reports'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Select frequency:'),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Daily'),
+                        selected: true,
+                        onSelected: (_) {},
+                        selectedColor: AppTheme.primaryColor,
+                        labelStyle: const TextStyle(color: Colors.white),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Weekly'),
+                        selected: false,
+                        onSelected: (_) {},
+                      ),
+                      ChoiceChip(
+                        label: const Text('Monthly'),
+                        selected: false,
+                        onSelected: (_) {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Select delivery method:'),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    title: const Text('Email'),
+                    value: true,
+                    onChanged: (_) {},
+                    activeColor: AppTheme.primaryColor,
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Push Notification'),
+                    value: true,
+                    onChanged: (_) {},
+                    activeColor: AppTheme.primaryColor,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Report scheduled successfully!'),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: AppTheme.primaryColor,
+                    ),
+                  );
+                },
+                child: const Text('Schedule'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+
+    // Get current report data
+    final currentReport = _reportData.isNotEmpty ? _reportData.last : null;
+    final previousReport =
+        _reportData.length > 1 ? _reportData[_reportData.length - 2] : null;
+
+    // Sort devices by energy usage for top consumers
+    final topDevices = List<DeviceEnergyInfo>.from(_deviceEnergyList)
+      ..sort((a, b) => b.dailyUsage.compareTo(a.dailyUsage));
+
+    // Format selected date
+    final dateFormat =
+        _selectedTimeRange == 'Day'
+            ? DateFormat('EEE, MMM d, yyyy')
+            : _selectedTimeRange == 'Week'
+            ? DateFormat('MMM d')
+            : _selectedTimeRange == 'Month'
+            ? DateFormat('MMM yyyy')
+            : DateFormat('yyyy');
+
+    String dateRangeText;
+    if (_selectedTimeRange == 'Day') {
+      dateRangeText = dateFormat.format(_selectedDate);
+    } else if (_selectedTimeRange == 'Week') {
+      final weekStart = _selectedDate.subtract(
+        Duration(days: _selectedDate.weekday - 1),
+      );
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      dateRangeText =
+          '${DateFormat('MMM d').format(weekStart)} - ${DateFormat('MMM d').format(weekEnd)}';
+    } else if (_selectedTimeRange == 'Month') {
+      dateRangeText = dateFormat.format(_selectedDate);
+    } else {
+      dateRangeText = dateFormat.format(_selectedDate);
+    }
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // App Bar
+            // App Bar with Date Selection
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -52,143 +269,228 @@ class _ReportsPageState extends State<ReportsPage>
                   const Spacer(),
                   IconButton(
                     icon: const Icon(
-                      Icons.calendar_today,
+                      Icons.date_range,
                       color: AppTheme.textPrimaryColor,
                     ),
-                    onPressed: () {
-                      // Show date picker
-                    },
+                    onPressed: _selectDate,
+                    tooltip: 'Select date',
                   ),
                   IconButton(
                     icon: const Icon(
-                      Icons.filter_list,
+                      Icons.share,
                       color: AppTheme.textPrimaryColor,
                     ),
-                    onPressed: () {
-                      // Show filter options
-                    },
+                    onPressed: _exportReport,
+                    tooltip: 'Export report',
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.schedule,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                    onPressed: _scheduleReport,
+                    tooltip: 'Schedule reports',
                   ),
                 ],
               ),
             ),
 
-            // Time range selector
+            // Time Period Selection
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                height: 40,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _timeRanges.length,
-                  itemBuilder: (context, index) {
-                    final range = _timeRanges[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 16.0),
-                      child: ChoiceChip(
-                        label: Text(range),
-                        selected: _selectedTimeRange == range,
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedTimeRange = range;
-                          });
-                        },
-                        selectedColor: AppTheme.primaryColor,
-                        labelStyle: TextStyle(
-                          color:
-                              _selectedTimeRange == range
-                                  ? Colors.white
-                                  : AppTheme.textSecondaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Usage Summary Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date display
+                  Row(
                     children: [
-                      const Text(
-                        'Total Energy Consumption',
-                        style: TextStyle(
-                          fontSize: 16,
+                      Text(
+                        dateRangeText,
+                        style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimaryColor,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const Spacer(),
+                      // Comparison toggle
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${appState.weeklyUsage} kWh',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
+                          const Text(
+                            'Compare',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondaryColor,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4CAF50).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.arrow_downward,
-                                  color: Color(0xFF4CAF50),
-                                  size: 16,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '15% less',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF4CAF50),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Switch(
+                            value: _compareWithPrevious,
+                            onChanged: (value) => _toggleComparison(),
+                            activeColor: AppTheme.primaryColor,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'VS. 92.1 kWh last week',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
                     ],
                   ),
-                ),
+
+                  const SizedBox(height: 16),
+
+                  // Time range selector (Day/Week/Month/Year)
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _timeRanges.length,
+                      itemBuilder: (context, index) {
+                        final range = _timeRanges[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16.0),
+                          child: ChoiceChip(
+                            label: Text(range),
+                            selected: _selectedTimeRange == range,
+                            onSelected: (selected) {
+                              if (selected) {
+                                _onTimeRangeChanged(range);
+                              }
+                            },
+                            selectedColor: AppTheme.primaryColor,
+                            labelStyle: TextStyle(
+                              color:
+                                  _selectedTimeRange == range
+                                      ? Colors.white
+                                      : AppTheme.textSecondaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // Tab Bar for charts
+            // Energy Usage Summary Card
+            if (currentReport != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total Energy Consumption',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${currentReport.energyUsage.toStringAsFixed(1)} kWh',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                            if (previousReport != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      currentReport.energyUsage <
+                                              previousReport.energyUsage
+                                          ? const Color(
+                                            0xFF4CAF50,
+                                          ).withOpacity(0.1)
+                                          : Colors.redAccent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      currentReport.energyUsage <
+                                              previousReport.energyUsage
+                                          ? Icons.arrow_downward
+                                          : Icons.arrow_upward,
+                                      color:
+                                          currentReport.energyUsage <
+                                                  previousReport.energyUsage
+                                              ? const Color(0xFF4CAF50)
+                                              : Colors.redAccent,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${((currentReport.energyUsage - previousReport.energyUsage).abs() / previousReport.energyUsage * 100).toStringAsFixed(1)}%',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            currentReport.energyUsage <
+                                                    previousReport.energyUsage
+                                                ? const Color(0xFF4CAF50)
+                                                : Colors.redAccent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (previousReport != null)
+                          Text(
+                            'VS. ${previousReport.energyUsage.toStringAsFixed(1)} kWh previous ${_selectedTimeRange.toLowerCase()}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+
+                        // Additional stats row
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            _buildStatItem(
+                              'Cost',
+                              '\$${currentReport.cost.toStringAsFixed(2)}',
+                              Icons.attach_money,
+                              Colors.green,
+                            ),
+                            _buildStatItem(
+                              'CO₂',
+                              '${currentReport.co2Emissions.toStringAsFixed(1)} kg',
+                              Icons.eco,
+                              Colors.teal,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+
+            // Tab Bar for different chart views
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               decoration: const BoxDecoration(
@@ -202,265 +504,548 @@ class _ReportsPageState extends State<ReportsPage>
                 labelColor: AppTheme.primaryColor,
                 unselectedLabelColor: AppTheme.textSecondaryColor,
                 tabs: const [
-                  Tab(text: 'Usage Breakdown'),
                   Tab(text: 'Usage Trend'),
+                  Tab(text: 'By Category'),
+                  Tab(text: 'By Device'),
                 ],
               ),
             ),
 
-            // Tab View for charts
+            // Tab Views with Charts
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // Usage Breakdown Tab (Pie Chart)
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Placeholder for pie chart
-                        Container(
-                          height: 250,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 160,
-                                      height: 160,
-                                      child: CircularProgressIndicator(
-                                        value: 0.45,
-                                        backgroundColor: Colors.grey.shade200,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF4CAF50),
-                                            ),
-                                        strokeWidth: 20,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 160,
-                                      height: 160,
-                                      child: CircularProgressIndicator(
-                                        value: 0.25,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF2196F3),
-                                            ),
-                                        strokeWidth: 20,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 160,
-                                      height: 160,
-                                      child: CircularProgressIndicator(
-                                        value: 0.15,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Colors.orange,
-                                            ),
-                                        strokeWidth: 20,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 160,
-                                      height: 160,
-                                      child: CircularProgressIndicator(
-                                        value: 0.10,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Colors.purple,
-                                            ),
-                                        strokeWidth: 20,
-                                      ),
-                                    ),
-                                    const Column(
-                                      children: [
-                                        Text(
-                                          'Total',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: AppTheme.textSecondaryColor,
-                                          ),
-                                        ),
-                                        Text(
-                                          '78.3 kWh',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimaryColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  // Usage Trend Tab (Line Chart)
+                  _buildUsageTrendTab(),
 
-                        const SizedBox(height: 24),
+                  // Category Breakdown Tab (Bar Chart)
+                  _buildCategoryBreakdownTab(),
 
-                        // Legend
-                        const Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                  // Device Breakdown Tab (Pie Chart)
+                  _buildDeviceBreakdownTab(topDevices),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                        _buildLegendItem(
-                          'HVAC',
-                          '45%',
-                          '35.2 kWh',
-                          const Color(0xFF4CAF50),
-                        ),
-                        _buildLegendItem(
-                          'Appliances',
-                          '25%',
-                          '19.6 kWh',
-                          const Color(0xFF2196F3),
-                        ),
-                        _buildLegendItem(
-                          'Lighting',
-                          '15%',
-                          '11.7 kWh',
-                          Colors.orange,
-                        ),
-                        _buildLegendItem(
-                          'Others',
-                          '10%',
-                          '11.8 kWh',
-                          Colors.purple,
-                        ),
-                      ],
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Usage Trend Tab
+  Widget _buildUsageTrendTab() {
+    final List<Map<String, dynamic>> lineChartData =
+        _reportData.map((report) {
+          String label = '';
+          if (_selectedTimeRange == 'Day') {
+            label = DateFormat('ha').format(report.date);
+          } else if (_selectedTimeRange == 'Week') {
+            label = DateFormat('E').format(report.date);
+          } else if (_selectedTimeRange == 'Month') {
+            label = DateFormat('MMM d').format(report.date);
+          } else {
+            label = DateFormat('yyyy').format(report.date);
+          }
+
+          return {
+            'label': label,
+            'value': report.energyUsage,
+            'date': report.date,
+          };
+        }).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Line Chart
+          const Text(
+            'Energy Consumption Over Time',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          LineChartWidget(
+            data: lineChartData,
+            xAxisLabel: _selectedTimeRange,
+            yAxisLabel: 'kWh',
+            showDots: _selectedTimeRange == 'Year',
+            showAverage: true,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Comparison widget if toggle is on
+          if (_compareWithPrevious && _reportData.length >= 2)
+            EnergyComparisionWidget(
+              currentValue: _reportData.last.energyUsage,
+              previousValue: _reportData[_reportData.length - 2].energyUsage,
+              currentLabel: 'Current ${_selectedTimeRange}',
+              previousLabel: 'Previous ${_selectedTimeRange}',
+            ),
+
+          const SizedBox(height: 24),
+
+          // Energy Saving Tips Section
+          const Text(
+            'Energy Saving Tips',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          ..._energySavingTips
+              .take(3)
+              .map((tip) => _buildTipCard(tip))
+              .toList(),
+
+          const SizedBox(height: 24),
+
+          // Unusual Activity Section
+          const Text(
+            'Unusual Activity',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          ..._energyAlerts.map((alert) => _buildAlertCard(alert)).toList(),
+        ],
+      ),
+    );
+  }
+
+  // Category Breakdown Tab
+  Widget _buildCategoryBreakdownTab() {
+    final Map<String, double> categoryTotals = {};
+
+    // Sum up category usage across all reports
+    for (final report in _reportData) {
+      report.deviceCategoryBreakdown.forEach((category, value) {
+        categoryTotals[category] = (categoryTotals[category] ?? 0) + value;
+      });
+    }
+
+    // Convert to format needed for BarChart
+    final List<Map<String, dynamic>> barChartData =
+        categoryTotals.entries
+            .map(
+              (entry) => {
+                'label': entry.key,
+                'name': entry.key,
+                'value': entry.value / _reportData.length, // Average value
+                'color': _categoryColorMap[entry.key],
+              },
+            )
+            .toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bar Chart
+          const Text(
+            'Energy Consumption by Category',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          BarChartWidget(
+            data: barChartData,
+            xAxisLabel: 'Categories',
+            yAxisLabel: 'kWh',
+            onBarSelected: (index) {
+              // Handle bar selection
+              setState(() {
+                _selectedDataPointIndex = index;
+              });
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          // Category Details
+          const Text(
+            'Category Details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // List of categories with details
+          ...categoryTotals.entries.map((entry) {
+            // Group devices by category
+            final devicesInCategory =
+                _deviceEnergyList
+                    .where((device) => device.type == entry.key)
+                    .toList();
+
+            return _buildCategoryCard(
+              entry.key,
+              entry.value / _reportData.length,
+              _categoryColorMap[entry.key] ?? Colors.grey,
+              devicesInCategory,
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  // Device Breakdown Tab
+  Widget _buildDeviceBreakdownTab(List<DeviceEnergyInfo> topDevices) {
+    final Map<String, double> deviceData = {};
+    final Map<String, Color> deviceColors = {};
+
+    // Get data for pie chart
+    for (final device in topDevices) {
+      deviceData[device.name] = device.dailyUsage;
+      deviceColors[device.name] = device.color;
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Pie Chart
+          const Text(
+            'Energy Consumption by Device',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          PieChartWidget(
+            data: deviceData,
+            colorMap: deviceColors,
+            centerText: 'Total',
+            centerSubText:
+                '${topDevices.fold(0.0, (sum, device) => sum + device.dailyUsage).toStringAsFixed(1)} kWh',
+          ),
+
+          const SizedBox(height: 24),
+
+          // Top Energy Consumers
+          const Text(
+            'Top Energy Consumers',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Top 3 devices
+          ...topDevices
+              .take(3)
+              .map(
+                (device) => DeviceEnergyCard(
+                  deviceName: device.name,
+                  deviceType: device.type,
+                  energyUsage: device.dailyUsage,
+                  cost: device.weeklyCost,
+                  icon: IconData(
+                    device.iconPath.codeUnits[0],
+                    fontFamily: 'MaterialIcons',
+                  ),
+                  color: device.color,
+                ),
+              )
+              .toList(),
+
+          const SizedBox(height: 24),
+
+          // All Devices Table
+          const Text(
+            'All Devices',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Table header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Device',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
                     ),
                   ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Category',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Usage',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Cost',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                  // Usage Trend Tab (Line Chart)
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Placeholder for line chart
-                        Container(
-                          height: 250,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Weekly Energy Trend',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimaryColor,
-                                      ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 6,
-                                          backgroundColor:
-                                              AppTheme.primaryColor,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'Usage',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: AppTheme.textSecondaryColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-
-                                // Simple line chart visualization
-                                SizedBox(
-                                  height: 160,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      _buildBarItem('Mon', 0.6),
-                                      _buildBarItem('Tue', 0.8),
-                                      _buildBarItem('Wed', 0.7),
-                                      _buildBarItem('Thu', 0.9),
-                                      _buildBarItem('Fri', 0.75),
-                                      _buildBarItem('Sat', 0.4),
-                                      _buildBarItem('Sun', 0.3),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Daily stats
-                        const Text(
-                          'Daily Stats',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+          // Table rows
+          ...topDevices
+              .map(
+                (device) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          device.name,
+                          style: const TextStyle(
                             color: AppTheme.textPrimaryColor,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          device.type,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          '${device.dailyUsage.toStringAsFixed(1)} kWh',
+                          style: const TextStyle(
+                            color: AppTheme.textPrimaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          '\$${device.weeklyCost.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: AppTheme.textPrimaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
 
-                        _buildDailyStatsItem('Monday', '12.6 kWh', '+5%'),
-                        _buildDailyStatsItem('Tuesday', '16.8 kWh', '+12%'),
-                        _buildDailyStatsItem('Wednesday', '14.7 kWh', '-5%'),
-                        _buildDailyStatsItem('Thursday', '18.1 kWh', '+10%'),
-                        _buildDailyStatsItem('Friday', '15.2 kWh', '-8%'),
-                      ],
+          const SizedBox(height: 16),
+
+          // Potential Savings Section
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            color: Colors.blue.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.savings, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text(
+                        'Potential Savings',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'By optimizing your device usage, you could save:',
+                    style: TextStyle(color: AppTheme.textSecondaryColor),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Up to \$${_energySavingTips.fold(0.0, (sum, tip) => sum + tip.potentialSavings).toStringAsFixed(2)} per month',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'See the Energy Saving Tips section for details.',
+                    style: TextStyle(color: AppTheme.textSecondaryColor),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipCard(EnergySavingTip tip) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(tip.icon, color: Colors.green, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tip.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    tip.description,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Potential Savings: \$${tip.potentialSavings.toStringAsFixed(2)}/month',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -472,128 +1057,162 @@ class _ReportsPageState extends State<ReportsPage>
     );
   }
 
-  Widget _buildLegendItem(
-    String title,
-    String percentage,
-    String amount,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        children: [
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            percentage,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBarItem(String day, double value) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: 30,
-          height: 130 * value,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, Color(0xFF81C784)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          day,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textSecondaryColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDailyStatsItem(String day, String amount, String change) {
-    final isPositive = change.startsWith('+');
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        children: [
-          Text(
-            day,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color:
-                  isPositive
-                      ? Colors.red.withOpacity(0.1)
-                      : Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              change,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isPositive ? Colors.red : Colors.green,
+  Widget _buildAlertCard(EnergyAlert alert) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color:
+                    alert.isImportant
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                alert.icon,
+                color: alert.isImportant ? Colors.red : Colors.orange,
+                size: 24,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    alert.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    alert.description,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_formatTimeAgo(alert.time)}',
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildCategoryCard(
+    String category,
+    double usage,
+    Color color,
+    List<DeviceEnergyInfo> devices,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  category,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${usage.toStringAsFixed(1)} kWh',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            if (devices.isNotEmpty) const SizedBox(height: 8),
+            if (devices.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children:
+                      devices
+                          .map(
+                            (device) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    device.name,
+                                    style: const TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${device.dailyUsage.toStringAsFixed(1)} kWh',
+                                    style: const TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimeAgo(DateTime time) {
+    final difference = DateTime.now().difference(time);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 }

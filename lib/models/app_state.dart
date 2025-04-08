@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+// Add import for the AppSettings models
+import 'settings/app_settings.dart';
+import 'settings/user_preferences.dart';
+import 'settings/home_configuration.dart';
+import 'settings/device_management.dart';
+import 'settings/advanced_settings.dart';
 
 class Device {
   final String id;
@@ -295,6 +301,9 @@ class AppState extends ChangeNotifier {
   // Device settings update simulation
   bool _isUpdatingDevice = false;
 
+  // App settings
+  AppSettings _appSettings = AppSettings();
+
   AppState() {
     // Calculate initial power usage based on active devices
     _recalculateTotalPowerUsage();
@@ -476,6 +485,7 @@ class AppState extends ChangeNotifier {
   double get todayEstimatedUsage => _todayEstimatedUsage;
   EnergyTip get currentTip => _energyTips[_currentTipIndex];
   List<EnergyAlert> get energyAlerts => _energyAlerts;
+  AppSettings get appSettings => _appSettings;
 
   bool isUsageLowerThanYesterday() {
     return _todayEstimatedUsage < _yesterdayUsage;
@@ -809,6 +819,98 @@ class AppState extends ChangeNotifier {
     }
 
     return uniqueRooms.toList()..sort();
+  }
+
+  // Update methods for different settings components
+  void updateUserPreferences(UserPreferences preferences) {
+    _appSettings = _appSettings.copyWith(userPreferences: preferences);
+    notifyListeners();
+  }
+
+  void updateHomeConfiguration(HomeConfiguration configuration) {
+    _appSettings = _appSettings.copyWith(homeConfiguration: configuration);
+    notifyListeners();
+  }
+
+  void updateDeviceManagement(DeviceManagement management) {
+    _appSettings = _appSettings.copyWith(deviceManagement: management);
+    notifyListeners();
+  }
+
+  void updateAdvancedSettings(AdvancedSettings settings) {
+    _appSettings = _appSettings.copyWith(advancedSettings: settings);
+    notifyListeners();
+  }
+
+  void updateAboutSettings(AboutSettings settings) {
+    _appSettings = _appSettings.copyWith(aboutSettings: settings);
+    notifyListeners();
+  }
+
+  // Helper methods related to settings
+
+  // Apply temperature unit to a value
+  double applyTemperatureUnit(double celsius) {
+    if (_appSettings.userPreferences.temperatureUnit == 'Fahrenheit') {
+      return (celsius * 9 / 5) + 32;
+    }
+    return celsius;
+  }
+
+  // Format temperature with correct unit
+  String formatTemperature(double celsius) {
+    double value = applyTemperatureUnit(celsius);
+    String unit =
+        _appSettings.userPreferences.temperatureUnit == 'Fahrenheit'
+            ? '°F'
+            : '°C';
+    return '${value.toStringAsFixed(1)}$unit';
+  }
+
+  // Calculate energy cost based on kWh and current price settings
+  double calculateEnergyCost(double kWh) {
+    return kWh * _appSettings.userPreferences.energyPricePerKwh;
+  }
+
+  // Format currency based on current settings
+  String formatCurrency(double amount) {
+    String symbol;
+    switch (_appSettings.userPreferences.currency) {
+      case 'USD':
+        symbol = '\$';
+        break;
+      case 'EUR':
+        symbol = '€';
+        break;
+      case 'GBP':
+        symbol = '£';
+        break;
+      case 'JPY':
+        symbol = '¥';
+        break;
+      case 'CAD':
+        symbol = 'CA\$';
+        break;
+      case 'AUD':
+        symbol = 'A\$';
+        break;
+      case 'CNY':
+        symbol = '¥';
+        break;
+      case 'INR':
+        symbol = '₹';
+        break;
+      case 'AED':
+        symbol = 'AED';
+        break;
+      case 'SAR':
+        symbol = 'SAR';
+        break;
+      default:
+        symbol = '\$';
+    }
+
+    return '$symbol${amount.toStringAsFixed(2)}';
   }
 
   @override

@@ -8,6 +8,7 @@ import 'pages/dashboard_page.dart';
 import 'pages/devices_page.dart';
 import 'pages/reports_page.dart';
 import 'pages/settings_page.dart';
+import 'providers/theme_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,23 +20,45 @@ void main() {
   ]);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppState(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AppState()),
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+      ],
       child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize theme from saved preferences
+    Future.microtask(
+      () =>
+          Provider.of<ThemeProvider>(context, listen: false).initializeTheme(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Digital EcoHome',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Digital EcoHome',
+          debugShowCheckedModeBanner: false,
+          theme: themeProvider.currentTheme,
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
@@ -87,6 +110,18 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
+    final primaryColor =
+        isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
+    final backgroundColor = isDarkMode ? AppTheme.darkCardColor : Colors.white;
+    final shadowColor =
+        isDarkMode
+            ? Colors.black.withOpacity(0.4)
+            : Colors.black.withOpacity(0.1);
+
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -94,10 +129,10 @@ class _MainNavigationState extends State<MainNavigation>
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: backgroundColor,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: shadowColor,
               blurRadius: 10,
               offset: const Offset(0, -3),
             ),
@@ -123,6 +158,18 @@ class _MainNavigationState extends State<MainNavigation>
 
   Widget _buildNavItem(int index, String label, IconData icon) {
     final isSelected = _currentIndex == index;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final primaryColor =
+        isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
+    final unselectedColor =
+        isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400;
+    final textColor =
+        isDarkMode ? AppTheme.darkTextPrimaryColor : AppTheme.textPrimaryColor;
+    final selectedBgColor =
+        isDarkMode
+            ? primaryColor.withOpacity(0.15)
+            : primaryColor.withOpacity(0.1);
 
     return InkWell(
       onTap: () => _onTabTapped(index),
@@ -130,10 +177,7 @@ class _MainNavigationState extends State<MainNavigation>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.1)
-                  : Colors.transparent,
+          color: isSelected ? selectedBgColor : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -144,8 +188,7 @@ class _MainNavigationState extends State<MainNavigation>
               curve: Curves.easeIn,
               child: Icon(
                 icon,
-                color:
-                    isSelected ? AppTheme.primaryColor : Colors.grey.shade400,
+                color: isSelected ? primaryColor : unselectedColor,
                 size: isSelected ? 26 : 24,
               ),
             ),
@@ -155,8 +198,7 @@ class _MainNavigationState extends State<MainNavigation>
               style: TextStyle(
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color:
-                    isSelected ? AppTheme.primaryColor : Colors.grey.shade600,
+                color: isSelected ? primaryColor : textColor,
               ),
               child: Text(label),
             ),
