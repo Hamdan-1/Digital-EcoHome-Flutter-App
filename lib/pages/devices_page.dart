@@ -53,6 +53,7 @@ class _DevicesPageState extends State<DevicesPage>
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // Sort devices by power consumption (highest first)
     final devices = List<Device>.from(appState.devices)
@@ -72,26 +73,26 @@ class _DevicesPageState extends State<DevicesPage>
               pinned: true,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
-              title: const Text(
+              title: Text(
                 'My Devices',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
+                  color: AppTheme.getTextPrimaryColor(context),
                 ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.search,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                   onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.settings,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                   onPressed: () {},
                 ),
@@ -115,11 +116,11 @@ class _DevicesPageState extends State<DevicesPage>
                           : () => _handleDeviceDiscovery(appState),
                   icon:
                       appState.isScanning
-                          ? const SizedBox(
+                          ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: isDarkMode ? Colors.white : Colors.white,
                               strokeWidth: 2,
                             ),
                           )
@@ -137,11 +138,11 @@ class _DevicesPageState extends State<DevicesPage>
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'Room:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
+                        color: AppTheme.getTextPrimaryColor(context),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -149,9 +150,12 @@ class _DevicesPageState extends State<DevicesPage>
                       child: DropdownButton<String>(
                         value: _selectedRoom,
                         isExpanded: true,
+                        dropdownColor: AppTheme.getCardColor(context),
                         underline: Container(
                           height: 1,
-                          color: AppTheme.primaryColor.withOpacity(0.5),
+                          color: AppTheme.getPrimaryColor(
+                            context,
+                          ).withOpacity(0.5),
                         ),
                         onChanged: (String? newValue) {
                           if (newValue != null) {
@@ -164,7 +168,14 @@ class _DevicesPageState extends State<DevicesPage>
                             rooms.map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
-                                child: Text(value),
+                                child: Text(
+                                  value,
+                                  style: TextStyle(
+                                    color: AppTheme.getTextPrimaryColor(
+                                      context,
+                                    ),
+                                  ),
+                                ),
                               );
                             }).toList(),
                       ),
@@ -186,25 +197,33 @@ class _DevicesPageState extends State<DevicesPage>
                     itemCount: _categories.length,
                     itemBuilder: (context, index) {
                       final category = _categories[index];
+                      final isSelected = _selectedCategory == category;
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: FilterChip(
                           label: Text(category),
-                          selected: _selectedCategory == category,
+                          selected: isSelected,
                           onSelected: (selected) {
                             setState(() {
                               _selectedCategory = category;
                             });
                           },
-                          selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-                          checkmarkColor: AppTheme.primaryColor,
+                          selectedColor: AppTheme.getPrimaryColor(
+                            context,
+                          ).withOpacity(0.2),
+                          checkmarkColor: AppTheme.getPrimaryColor(context),
+                          backgroundColor:
+                              isDarkMode
+                                  ? AppTheme.darkCardColor.withOpacity(0.6)
+                                  : Colors.grey.withOpacity(0.1),
                           labelStyle: TextStyle(
                             color:
-                                _selectedCategory == category
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.textSecondaryColor,
+                                isSelected
+                                    ? AppTheme.getPrimaryColor(context)
+                                    : AppTheme.getTextSecondaryColor(context),
                             fontWeight:
-                                _selectedCategory == category
+                                isSelected
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                           ),
@@ -225,12 +244,12 @@ class _DevicesPageState extends State<DevicesPage>
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'Coming Soon',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryColor,
+                            color: AppTheme.getTextPrimaryColor(context),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -261,39 +280,40 @@ class _DevicesPageState extends State<DevicesPage>
                         scrollDirection: Axis.horizontal,
                         children: [
                           _buildComingSoonFeatureCard(
+                            context,
                             'Smart Thermostat',
-                            'Advanced AI temperature control',
                             Icons.thermostat,
-                            Colors.deepPurple,
                           ),
                           _buildComingSoonFeatureCard(
+                            context,
                             'Security System',
-                            'Integrated cameras and sensors',
                             Icons.security,
-                            Colors.red,
                           ),
                           _buildComingSoonFeatureCard(
+                            context,
                             'Smart Kitchen',
-                            'Connected appliances and recipes',
                             Icons.kitchen,
-                            Colors.amber,
                           ),
                           _buildComingSoonFeatureCard(
+                            context,
                             'Water Management',
-                            'Monitor and optimize water usage',
                             Icons.water_drop,
-                            Colors.blue,
                           ),
                           _buildComingSoonFeatureCard(
+                            context,
                             'Energy Storage',
-                            'Home battery integration',
                             Icons.battery_charging_full,
-                            Colors.green,
                           ),
                         ],
                       ),
                     ),
-                    const Divider(height: 32),
+                    Divider(
+                      height: 32,
+                      color:
+                          isDarkMode
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade300,
+                    ),
                   ],
                 ),
               ),
@@ -301,7 +321,7 @@ class _DevicesPageState extends State<DevicesPage>
 
             // Discovered devices section (when scanning or devices found)
             if (appState.isScanning || appState.discoveredDevices.isNotEmpty)
-              _buildDiscoveredDevicesSection(appState),
+              _buildDiscoveredDevicesSection(appState, context),
 
             // Devices List
             SliverList(
@@ -336,13 +356,16 @@ class _DevicesPageState extends State<DevicesPage>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: AppTheme.getPrimaryColor(context),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildDiscoveredDevicesSection(AppState appState) {
+  Widget _buildDiscoveredDevicesSection(
+    AppState appState,
+    BuildContext context,
+  ) {
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,12 +374,12 @@ class _DevicesPageState extends State<DevicesPage>
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Discovered Devices',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -367,7 +390,7 @@ class _DevicesPageState extends State<DevicesPage>
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.primaryColor,
+                        AppTheme.getPrimaryColor(context),
                       ),
                     ),
                   ),
@@ -485,18 +508,25 @@ class _DevicesPageState extends State<DevicesPage>
   }
 
   Widget _buildDiscoveredDeviceCard(Device device, AppState appState) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: 120,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? AppTheme.darkCardColor : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+          width: 1,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
+          if (!isDarkMode)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
         ],
       ),
       child: Padding(
@@ -518,9 +548,10 @@ class _DevicesPageState extends State<DevicesPage>
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
+                  color: AppTheme.getTextPrimaryColor(context),
                 ),
               ),
             ),
@@ -528,7 +559,7 @@ class _DevicesPageState extends State<DevicesPage>
             Text(
               device.room,
               style: TextStyle(
-                color: AppTheme.textSecondaryColor,
+                color: AppTheme.getTextSecondaryColor(context),
                 fontSize: 10,
               ),
             ),
@@ -539,6 +570,7 @@ class _DevicesPageState extends State<DevicesPage>
                 onPressed: () => appState.addDiscoveredDevice(device.id),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 0,
@@ -587,9 +619,18 @@ class _DevicesPageState extends State<DevicesPage>
     Device device,
     AppState appState,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: isDarkMode ? 0 : 2,
+      color: isDarkMode ? AppTheme.darkCardColor : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side:
+            isDarkMode
+                ? BorderSide(color: Colors.grey.shade800, width: 1)
+                : BorderSide.none,
+      ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -601,20 +642,29 @@ class _DevicesPageState extends State<DevicesPage>
           decoration: BoxDecoration(
             color:
                 device.isActive
-                    ? AppTheme.primaryColor.withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.1),
+                    ? AppTheme.getPrimaryColor(
+                      context,
+                    ).withOpacity(isDarkMode ? 0.3 : 0.2)
+                    : (isDarkMode
+                        ? Colors.grey.shade800
+                        : Colors.grey.withOpacity(0.1)),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             _getIconForDevice(device.iconPath),
-            color: device.isActive ? AppTheme.primaryColor : Colors.grey,
+            color:
+                device.isActive
+                    ? AppTheme.getPrimaryColor(context)
+                    : isDarkMode
+                    ? Colors.grey.shade500
+                    : Colors.grey,
           ),
         ),
         title: Text(
           device.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimaryColor,
+            color: AppTheme.getTextPrimaryColor(context),
           ),
         ),
         subtitle: Column(
@@ -626,7 +676,7 @@ class _DevicesPageState extends State<DevicesPage>
                 Text(
                   device.room,
                   style: TextStyle(
-                    color: AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextSecondaryColor(context),
                     fontSize: 12,
                   ),
                 ),
@@ -636,14 +686,19 @@ class _DevicesPageState extends State<DevicesPage>
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: device.isActive ? Colors.green : Colors.grey,
+                    color:
+                        device.isActive
+                            ? Colors.green
+                            : isDarkMode
+                            ? Colors.grey.shade600
+                            : Colors.grey,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   device.isActive ? 'Connected' : 'Disconnected',
                   style: TextStyle(
-                    color: AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextSecondaryColor(context),
                     fontSize: 12,
                   ),
                 ),
@@ -655,7 +710,12 @@ class _DevicesPageState extends State<DevicesPage>
                 Icon(
                   Icons.bolt,
                   size: 14,
-                  color: device.isActive ? AppTheme.primaryColor : Colors.grey,
+                  color:
+                      device.isActive
+                          ? AppTheme.getPrimaryColor(context)
+                          : isDarkMode
+                          ? Colors.grey.shade500
+                          : Colors.grey,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -664,7 +724,11 @@ class _DevicesPageState extends State<DevicesPage>
                       : 'Inactive',
                   style: TextStyle(
                     color:
-                        device.isActive ? AppTheme.primaryColor : Colors.grey,
+                        device.isActive
+                            ? AppTheme.getPrimaryColor(context)
+                            : isDarkMode
+                            ? Colors.grey.shade500
+                            : Colors.grey,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -675,7 +739,9 @@ class _DevicesPageState extends State<DevicesPage>
         trailing: Switch(
           value: device.isActive,
           onChanged: (_) => appState.toggleDevice(device.id),
-          activeColor: AppTheme.primaryColor,
+          activeColor: AppTheme.getPrimaryColor(context),
+          inactiveThumbColor: isDarkMode ? Colors.grey.shade600 : null,
+          inactiveTrackColor: isDarkMode ? Colors.grey.shade800 : null,
         ),
         onTap: () {
           _navigateToDeviceControl(context, device);
@@ -729,54 +795,93 @@ class _DevicesPageState extends State<DevicesPage>
   }
 
   Widget _buildComingSoonFeatureCard(
+    BuildContext context,
     String title,
-    String description,
     IconData icon,
-    Color color,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      width: 200,
+      width: MediaQuery.of(context).size.width * 0.43,
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color:
+            isDarkMode
+                ? AppTheme.darkCardColor.withOpacity(0.8)
+                : Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade800 : Colors.grey[300]!,
+          width: 1,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
+          if (!isDarkMode)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color:
+                    isDarkMode
+                        ? Colors.grey.shade800.withOpacity(0.5)
+                        : Colors.grey[200],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: AppTheme.getPrimaryColor(context),
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isDarkMode
+                            ? AppTheme.getPrimaryColor(context).withOpacity(0.2)
+                            : AppTheme.getPrimaryColor(
+                              context,
+                            ).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Coming Soon',
+                    style: TextStyle(
+                      color: AppTheme.getPrimaryColor(context),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
-              fontSize: 12,
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

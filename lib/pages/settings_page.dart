@@ -9,6 +9,8 @@ import '../models/settings/device_management.dart';
 import '../models/settings/advanced_settings.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/dark_mode_toggle.dart';
+import '../models/demo_mode.dart';
+import 'demo_mode_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -672,6 +674,19 @@ class _SettingsPageState extends State<SettingsPage> {
           title: 'Digital EcoHome Project',
           subtitle: 'A smart solution for home energy management',
           icon: Icons.eco,
+        ),
+
+        const Divider(height: 32),
+
+        // Demo Mode section
+        _buildSectionHeader('Demo Mode'),
+        _buildButtonSetting(
+          title: 'Start Demo Mode',
+          subtitle: 'Experience a guided walkthrough with simulated scenarios',
+          icon: Icons.play_circle_filled,
+          onTap: () {
+            _launchDemoMode(context);
+          },
         ),
 
         const Divider(height: 32),
@@ -1934,5 +1949,18 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  void _launchDemoMode(BuildContext context) {
+    // Get the DemoMode instance
+    final demoMode = Provider.of<DemoMode>(context, listen: false);
+
+    // Start the demo
+    demoMode.startDemo();
+
+    // Navigate to the demo page
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const DemoModePage()));
   }
 }

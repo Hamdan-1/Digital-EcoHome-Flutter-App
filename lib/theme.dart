@@ -162,4 +162,16 @@ class AppTheme {
         ? darkTextSecondaryColor
         : textSecondaryColor;
   }
+
+  static Color getPrimaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkPrimaryColor
+        : primaryColor;
+  }
+
+  static Color getCardColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkCardColor
+        : Colors.white;
+  }
 }

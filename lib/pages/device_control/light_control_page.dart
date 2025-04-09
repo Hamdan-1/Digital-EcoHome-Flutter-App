@@ -141,6 +141,8 @@ class _LightControlPageState extends State<LightControlPage> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     final device = appState.devices.firstWhere(
       (d) => d.id == widget.deviceId,
       orElse:
@@ -172,15 +174,36 @@ class _LightControlPageState extends State<LightControlPage> {
       factor = factor.clamp(0.0, 1.0);
 
       // Warm (2700K) to cool (6500K)
-      bgColor =
-          Color.lerp(
-            const Color(0xFFFFF4E5), // Warm
-            const Color(0xFFE8F3FF), // Cool
-            factor,
-          )!;
+      if (isDarkMode) {
+        // Darker versions for dark mode
+        bgColor =
+            Color.lerp(
+              const Color(0xFF3A2E1D), // Dark warm
+              const Color(0xFF1D2A3A), // Dark cool
+              factor,
+            )!;
+      } else {
+        bgColor =
+            Color.lerp(
+              const Color(0xFFFFF4E5), // Warm
+              const Color(0xFFE8F3FF), // Cool
+              factor,
+            )!;
+      }
     } else {
-      // Use selected color for colored scenes but make it very light
-      bgColor = Color.alphaBlend(_selectedColor.withOpacity(0.1), Colors.white);
+      // Use selected color for colored scenes but make it very light/dark
+      if (isDarkMode) {
+        // Darker version for dark mode, keep some color tint
+        bgColor = Color.alphaBlend(
+          _selectedColor.withOpacity(0.15),
+          AppTheme.darkBackgroundColor,
+        );
+      } else {
+        bgColor = Color.alphaBlend(
+          _selectedColor.withOpacity(0.1),
+          Colors.white,
+        );
+      }
     }
 
     return Scaffold(
@@ -189,6 +212,7 @@ class _LightControlPageState extends State<LightControlPage> {
         title: Text(device.name),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        foregroundColor: isDarkMode ? Colors.white : Colors.black,
         actions: [
           if (_settingsChanged)
             IconButton(
@@ -203,7 +227,7 @@ class _LightControlPageState extends State<LightControlPage> {
             padding: const EdgeInsets.all(16.0),
             children: [
               // Light visualization
-              _buildLightVisualization(device),
+              _buildLightVisualization(device, context),
 
               const SizedBox(height: 24),
 
@@ -252,9 +276,12 @@ class _LightControlPageState extends State<LightControlPage> {
     );
   }
 
-  Widget _buildLightVisualization(Device device) {
-    final bulbColor = device.isActive ? _getLightColor() : Colors.grey.shade300;
-
+  Widget _buildLightVisualization(Device device, BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bulbColor =
+        device.isActive
+            ? _getLightColor()
+            : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
     final glowOpacity = device.isActive ? (_brightness / 100) * 0.8 : 0.0;
 
     return Center(
@@ -303,7 +330,9 @@ class _LightControlPageState extends State<LightControlPage> {
                 color:
                     device.isActive
                         ? Colors.white.withOpacity(0.9)
-                        : Colors.grey.shade400,
+                        : (isDarkMode
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400),
               ),
             ),
           ),
@@ -332,30 +361,47 @@ class _LightControlPageState extends State<LightControlPage> {
     }
   }
 
+  Color _getColorForTemperature() {
+    // Map color temperature (2700K-6500K) to a color
+    double factor = (_colorTemperature - 2700) / (6500 - 2700);
+    factor = factor.clamp(0.0, 1.0);
+
+    // Warm (amber) to cool (white-blue)
+    return Color.lerp(
+      const Color(0xFFFFD28F), // Warm color (2700K)
+      const Color(0xFFD6ECFF), // Cool color (6500K)
+      factor,
+    )!;
+  }
+
   Widget _buildBrightnessControl(Device device) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: Colors.white.withOpacity(0.8),
+      color:
+          isDarkMode
+              ? AppTheme.darkCardColor.withOpacity(0.8)
+              : Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Brightness',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+                color: AppTheme.getTextPrimaryColor(context),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.brightness_low,
-                  color: AppTheme.textSecondaryColor,
+                  color: AppTheme.getTextSecondaryColor(context),
                 ),
                 Expanded(
                   child: Slider(
@@ -364,8 +410,12 @@ class _LightControlPageState extends State<LightControlPage> {
                     max: 100,
                     divisions: 20,
                     activeColor:
-                        device.isActive ? AppTheme.primaryColor : Colors.grey,
-                    inactiveColor: AppTheme.primaryColor.withOpacity(0.2),
+                        device.isActive
+                            ? AppTheme.getPrimaryColor(context)
+                            : Colors.grey,
+                    inactiveColor: AppTheme.getPrimaryColor(
+                      context,
+                    ).withOpacity(0.2),
                     onChanged:
                         !device.isActive
                             ? null
@@ -386,18 +436,18 @@ class _LightControlPageState extends State<LightControlPage> {
                             },
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.brightness_high,
-                  color: AppTheme.textSecondaryColor,
+                  color: AppTheme.getTextSecondaryColor(context),
                 ),
               ],
             ),
             Center(
               child: Text(
                 '$_brightness%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
+                  color: AppTheme.getTextPrimaryColor(context),
                 ),
               ),
             ),
@@ -408,6 +458,8 @@ class _LightControlPageState extends State<LightControlPage> {
   }
 
   Widget _buildColorTemperatureControl() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     // Format the temperature value for display
     String displayTemp;
     if (_colorTemperature >= 1000) {
@@ -418,19 +470,22 @@ class _LightControlPageState extends State<LightControlPage> {
 
     return Card(
       elevation: 0,
-      color: Colors.white.withOpacity(0.8),
+      color:
+          isDarkMode
+              ? AppTheme.darkCardColor.withOpacity(0.8)
+              : Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Color Temperature',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+                color: AppTheme.getTextPrimaryColor(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -443,7 +498,12 @@ class _LightControlPageState extends State<LightControlPage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD28F),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(
+                      color:
+                          isDarkMode
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -476,7 +536,12 @@ class _LightControlPageState extends State<LightControlPage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFD6ECFF),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(
+                      color:
+                          isDarkMode
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                    ),
                   ),
                 ),
               ],
@@ -484,9 +549,9 @@ class _LightControlPageState extends State<LightControlPage> {
             Center(
               child: Text(
                 displayTemp,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
+                  color: AppTheme.getTextPrimaryColor(context),
                 ),
               ),
             ),
@@ -494,18 +559,18 @@ class _LightControlPageState extends State<LightControlPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Warm',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextSecondaryColor(context),
                   ),
                 ),
-                const Text(
+                Text(
                   'Cool',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextSecondaryColor(context),
                   ),
                 ),
               ],
@@ -516,31 +581,26 @@ class _LightControlPageState extends State<LightControlPage> {
     );
   }
 
-  Color _getColorForTemperature() {
-    double factor = (_colorTemperature - 2700) / (6500 - 2700);
-    return Color.lerp(
-      const Color(0xFFFFD28F), // Warm
-      const Color(0xFFD6ECFF), // Cool
-      factor,
-    )!;
-  }
-
   Widget _buildSceneSelection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: Colors.white.withOpacity(0.8),
+      color:
+          isDarkMode
+              ? AppTheme.darkCardColor.withOpacity(0.8)
+              : Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Scenes',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+                color: AppTheme.getTextPrimaryColor(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -566,13 +626,17 @@ class _LightControlPageState extends State<LightControlPage> {
                     decoration: BoxDecoration(
                       color:
                           isSelected
-                              ? AppTheme.primaryColor.withOpacity(0.1)
-                              : Colors.grey.withOpacity(0.05),
+                              ? AppTheme.getPrimaryColor(
+                                context,
+                              ).withOpacity(0.1)
+                              : (isDarkMode
+                                  ? Colors.grey.shade800.withOpacity(0.3)
+                                  : Colors.grey.withOpacity(0.05)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color:
                             isSelected
-                                ? AppTheme.primaryColor
+                                ? AppTheme.getPrimaryColor(context)
                                 : Colors.transparent,
                         width: 2,
                       ),
@@ -585,8 +649,10 @@ class _LightControlPageState extends State<LightControlPage> {
                           decoration: BoxDecoration(
                             color:
                                 isSelected
-                                    ? AppTheme.primaryColor
-                                    : Colors.grey.shade200,
+                                    ? AppTheme.getPrimaryColor(context)
+                                    : (isDarkMode
+                                        ? Colors.grey.shade700
+                                        : Colors.grey.shade200),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -594,7 +660,9 @@ class _LightControlPageState extends State<LightControlPage> {
                             color:
                                 isSelected
                                     ? Colors.white
-                                    : AppTheme.textSecondaryColor,
+                                    : (isDarkMode
+                                        ? Colors.white70
+                                        : AppTheme.textSecondaryColor),
                             size: 24,
                           ),
                         ),
@@ -608,8 +676,8 @@ class _LightControlPageState extends State<LightControlPage> {
                                     : FontWeight.normal,
                             color:
                                 isSelected
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.textSecondaryColor,
+                                    ? AppTheme.getPrimaryColor(context)
+                                    : AppTheme.getTextSecondaryColor(context),
                           ),
                         ),
                       ],
@@ -625,9 +693,14 @@ class _LightControlPageState extends State<LightControlPage> {
   }
 
   Widget _buildGroupControl() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 0,
-      color: Colors.white.withOpacity(0.8),
+      color:
+          isDarkMode
+              ? AppTheme.darkCardColor.withOpacity(0.8)
+              : Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -637,12 +710,12 @@ class _LightControlPageState extends State<LightControlPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Group Control',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
                 Container(
@@ -666,25 +739,47 @@ class _LightControlPageState extends State<LightControlPage> {
               ],
             ),
             const SizedBox(height: 16),
-            const ListTile(
-              leading: Icon(Icons.lightbulb, color: Colors.grey),
-              title: Text('Living Room Lights'),
-              subtitle: Text('3 lights'),
+            ListTile(
+              leading: Icon(
+                Icons.lightbulb,
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+              title: Text(
+                'Living Room Lights',
+                style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
+              ),
+              subtitle: Text(
+                '3 lights',
+                style: TextStyle(
+                  color: AppTheme.getTextSecondaryColor(context),
+                ),
+              ),
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Colors.grey,
+                color: AppTheme.getTextSecondaryColor(context),
               ),
               contentPadding: EdgeInsets.zero,
             ),
-            const ListTile(
-              leading: Icon(Icons.lightbulb, color: Colors.grey),
-              title: Text('Bedroom Lights'),
-              subtitle: Text('2 lights'),
+            ListTile(
+              leading: Icon(
+                Icons.lightbulb,
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+              title: Text(
+                'Bedroom Lights',
+                style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
+              ),
+              subtitle: Text(
+                '2 lights',
+                style: TextStyle(
+                  color: AppTheme.getTextSecondaryColor(context),
+                ),
+              ),
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Colors.grey,
+                color: AppTheme.getTextSecondaryColor(context),
               ),
               contentPadding: EdgeInsets.zero,
             ),
@@ -695,9 +790,14 @@ class _LightControlPageState extends State<LightControlPage> {
   }
 
   Widget _buildScheduleSection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 0,
-      color: Colors.white.withOpacity(0.8),
+      color:
+          isDarkMode
+              ? AppTheme.darkCardColor.withOpacity(0.8)
+              : Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -707,12 +807,12 @@ class _LightControlPageState extends State<LightControlPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Schedules',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
                 Container(
@@ -745,12 +845,13 @@ class _LightControlPageState extends State<LightControlPage> {
                   ),
                 );
               },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Schedule'),
+              icon: Icon(Icons.add),
+              label: Text('Add Schedule'),
               style: ElevatedButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppTheme.primaryColor),
+                foregroundColor: AppTheme.getPrimaryColor(context),
+                backgroundColor:
+                    isDarkMode ? Colors.grey.shade800 : Colors.white,
+                side: BorderSide(color: AppTheme.getPrimaryColor(context)),
               ),
             ),
           ],

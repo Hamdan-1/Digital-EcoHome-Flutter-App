@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import '../theme.dart';
 import '../widgets/usage_chart.dart';
+import '../widgets/notification_badge.dart';
+import '../widgets/notification_panel.dart';
+import '../services/notification_service.dart';
+import '../utils/notification_helper.dart';
 import 'dart:math' as math;
 
 class DashboardPage extends StatefulWidget {
@@ -21,6 +25,20 @@ class _DashboardPageState extends State<DashboardPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Initialize sample notifications
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSampleNotifications();
+    });
+  }
+
+  void _initializeSampleNotifications() {
+    final notificationService = Provider.of<InAppNotificationService>(
+      context,
+      listen: false,
+    );
+    // Use the notification helper to add sample notifications
+    NotificationHelper.addSampleNotifications(notificationService);
   }
 
   @override
@@ -44,14 +62,14 @@ class _DashboardPageState extends State<DashboardPage>
               pinned: false,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
-              title: const Row(
+              title: Row(
                 children: [
                   Text(
                     'Digital ',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.getPrimaryColor(context),
                     ),
                   ),
                   Text(
@@ -59,18 +77,22 @@ class _DashboardPageState extends State<DashboardPage>
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w400,
-                      color: AppTheme.textPrimaryColor,
+                      color: AppTheme.getTextPrimaryColor(context),
                     ),
                   ),
                 ],
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    color: AppTheme.textPrimaryColor,
+                NotificationBadge(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.notifications_outlined,
+                      color: AppTheme.getTextPrimaryColor(context),
+                    ),
+                    onPressed: () {
+                      _showNotificationPanel(context);
+                    },
                   ),
-                  onPressed: () {},
                 ),
                 const SizedBox(width: 8),
               ],
@@ -83,12 +105,12 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Welcome Home',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
+                        color: AppTheme.getTextPrimaryColor(context),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -96,7 +118,7 @@ class _DashboardPageState extends State<DashboardPage>
                       'Monitor and control your home\'s energy usage',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.textSecondaryColor,
+                        color: AppTheme.getTextSecondaryColor(context),
                       ),
                     ),
                   ],
@@ -119,15 +141,23 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Quick Device Access',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
+                        color: AppTheme.getTextPrimaryColor(context),
                       ),
                     ),
-                    TextButton(onPressed: () {}, child: const Text('See All')),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'See All',
+                        style: TextStyle(
+                          color: AppTheme.getPrimaryColor(context),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -148,12 +178,12 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Energy Insights',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
+                        color: AppTheme.getTextPrimaryColor(context),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -183,6 +213,8 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildEnergyOverviewCard(AppState appState) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -190,8 +222,17 @@ class _DashboardPageState extends State<DashboardPage>
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+          gradient: LinearGradient(
+            colors:
+                isDarkMode
+                    ? [
+                      const Color(0xFF2E7D32),
+                      const Color(0xFF1B5E20),
+                    ] // Darker green gradient for dark mode
+                    : [
+                      const Color(0xFF4CAF50),
+                      const Color(0xFF2E7D32),
+                    ], // Original gradient for light mode
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -241,9 +282,7 @@ class _DashboardPageState extends State<DashboardPage>
             // Enhanced animated Current Power Usage Value with smoother transition
             TweenAnimationBuilder<double>(
               tween: Tween<double>(
-                begin:
-                    appState.currentPowerUsage *
-                    0.95, // Starting from close to current value for smoother transition
+                begin: appState.currentPowerUsage * 0.95,
                 end: appState.currentPowerUsage,
               ),
               duration: const Duration(milliseconds: 800),
@@ -254,20 +293,30 @@ class _DashboardPageState extends State<DashboardPage>
                   children: [
                     Text(
                       value.toStringAsFixed(1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        shadows:
+                            isDarkMode
+                                ? [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(0, 2),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                                : [],
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         ' kW',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w300,
-                          color: Colors.white70,
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ),
@@ -302,21 +351,21 @@ class _DashboardPageState extends State<DashboardPage>
                   '24h ago',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
                   ),
                 ),
                 Text(
                   '12h ago',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
                   ),
                 ),
                 Text(
                   'Now',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
                   ),
                 ),
               ],
@@ -328,41 +377,76 @@ class _DashboardPageState extends State<DashboardPage>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color:
+                    isDarkMode
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.attach_money, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.attach_money,
+                        color: Colors.white,
+                        size: 20,
+                        shadows:
+                            isDarkMode
+                                ? [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    offset: const Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ]
+                                : [],
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         'Estimated Daily Cost',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          shadows:
+                              isDarkMode
+                                  ? [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ]
+                                  : [],
                         ),
                       ),
                     ],
                   ),
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
-                      begin:
-                          appState.calculateDailyCost() *
-                          0.98, // For a smoother transition
+                      begin: appState.calculateDailyCost() * 0.98,
                       end: appState.calculateDailyCost(),
                     ),
                     duration: const Duration(milliseconds: 500),
                     builder: (context, value, child) {
                       return Text(
                         '\$${value.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          shadows:
+                              isDarkMode
+                                  ? [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ]
+                                  : [],
                         ),
                       );
                     },
@@ -393,6 +477,9 @@ class _DashboardPageState extends State<DashboardPage>
     Device device,
     AppState appState,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppTheme.getPrimaryColor(context);
+
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: Card(
@@ -421,8 +508,10 @@ class _DashboardPageState extends State<DashboardPage>
                         _getIconForDevice(device.iconPath),
                         color:
                             device.isActive
-                                ? AppTheme.primaryColor
-                                : Colors.grey,
+                                ? primaryColor
+                                : isDarkMode
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade400,
                         size: device.isActive ? 26 : 24,
                       ),
                     ),
@@ -433,7 +522,7 @@ class _DashboardPageState extends State<DashboardPage>
                         HapticFeedback.selectionClick();
                         appState.toggleDevice(device.id);
                       },
-                      activeColor: AppTheme.primaryColor,
+                      activeColor: primaryColor,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],
@@ -444,10 +533,7 @@ class _DashboardPageState extends State<DashboardPage>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color:
-                        device.isActive
-                            ? AppTheme.textPrimaryColor
-                            : AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -468,8 +554,8 @@ class _DashboardPageState extends State<DashboardPage>
                         fontSize: 12,
                         color:
                             device.isActive
-                                ? AppTheme.primaryColor
-                                : AppTheme.textSecondaryColor,
+                                ? primaryColor
+                                : AppTheme.getTextSecondaryColor(context),
                         fontWeight: FontWeight.bold,
                       ),
                     );
@@ -485,6 +571,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildEnergyTipCard(AppState appState) {
     final tip = appState.currentTip;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppTheme.getPrimaryColor(context);
 
     return Card(
       elevation: 2,
@@ -498,12 +586,12 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 Icon(Icons.lightbulb, color: Colors.amber),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Energy Tip of the Day',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
               ],
@@ -515,10 +603,13 @@ class _DashboardPageState extends State<DashboardPage>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color:
+                        isDarkMode
+                            ? primaryColor.withOpacity(0.15)
+                            : primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(tip.icon, color: AppTheme.primaryColor),
+                  child: Icon(tip.icon, color: primaryColor),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -527,18 +618,18 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       Text(
                         tip.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
+                          color: AppTheme.getTextPrimaryColor(context),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         tip.description,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.textSecondaryColor,
+                          color: AppTheme.getTextSecondaryColor(context),
                         ),
                       ),
                     ],
@@ -555,6 +646,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _buildUsageComparisonCard(AppState appState) {
     final isLower = appState.isUsageLowerThanYesterday();
     final percentDiff = appState.usageDifferencePercent().toStringAsFixed(1);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       elevation: 2,
@@ -568,9 +660,13 @@ class _DashboardPageState extends State<DashboardPage>
               height: 60,
               decoration: BoxDecoration(
                 color:
-                    isLower
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.red.withOpacity(0.1),
+                    isDarkMode
+                        ? (isLower
+                            ? Colors.green.withOpacity(0.3)
+                            : Colors.red.withOpacity(0.3))
+                        : (isLower
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -588,10 +684,10 @@ class _DashboardPageState extends State<DashboardPage>
                     isLower
                         ? 'Using Less Energy Today'
                         : 'Using More Energy Today',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
+                      color: AppTheme.getTextPrimaryColor(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -611,9 +707,9 @@ class _DashboardPageState extends State<DashboardPage>
                               isLower
                                   ? 'less than yesterday'
                                   : 'more than yesterday',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppTheme.textSecondaryColor,
+                            color: AppTheme.getTextSecondaryColor(context),
                           ),
                         ),
                       ],
@@ -630,6 +726,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildAlertsList(AppState appState) {
     final alerts = appState.energyAlerts;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (alerts.isEmpty) {
       return const SizedBox.shrink();
@@ -638,16 +735,16 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
             Icon(Icons.notifications, color: Colors.orange),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               'Alerts',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+                color: AppTheme.getTextPrimaryColor(context),
               ),
             ),
           ],
@@ -664,7 +761,14 @@ class _DashboardPageState extends State<DashboardPage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              color: alert.isRead ? Colors.grey.shade50 : Colors.orange.shade50,
+              color:
+                  isDarkMode
+                      ? (alert.isRead
+                          ? Colors.grey.shade800
+                          : Color(0xFF5D4037))
+                      : (alert.isRead
+                          ? Colors.grey.shade50
+                          : Colors.orange.shade50),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -676,23 +780,26 @@ class _DashboardPageState extends State<DashboardPage>
                     fontSize: 14,
                     fontWeight:
                         alert.isRead ? FontWeight.normal : FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
                 subtitle: Text(
                   _formatAlertTime(alert.time),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryColor,
+                    color: AppTheme.getTextSecondaryColor(context),
                   ),
                 ),
                 trailing:
                     alert.isRead
                         ? null
                         : IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.check_circle_outline,
-                            color: Colors.orange,
+                            color:
+                                isDarkMode
+                                    ? Colors.orange.shade300
+                                    : Colors.orange,
                           ),
                           onPressed: () => appState.markAlertAsRead(index),
                         ),
@@ -737,5 +844,55 @@ class _DashboardPageState extends State<DashboardPage>
       default:
         return Icons.device_unknown;
     }
+  }
+
+  // Method to show notification panel
+  void _showNotificationPanel(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.4,
+            maxChildSize: 0.8,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        child: const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: NotificationPanel(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+    );
   }
 }

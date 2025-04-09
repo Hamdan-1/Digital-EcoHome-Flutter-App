@@ -7,6 +7,15 @@ import 'settings/user_preferences.dart';
 import 'settings/home_configuration.dart';
 import 'settings/device_management.dart';
 import 'settings/advanced_settings.dart';
+// Import IoT simulation components
+import 'simulation/iot_simulation_controller.dart';
+import 'simulation/simulation_config.dart';
+import 'simulation/device_behavior.dart';
+import 'simulation/energy_usage_simulator.dart';
+import 'simulation/notification_system.dart';
+import 'simulation/device_discovery.dart';
+import 'simulation/persistent_storage.dart';
+import 'gamification.dart'; // Import the new gamification models
 
 class Device {
   final String id;
@@ -134,6 +143,9 @@ class EnergyAlert {
 }
 
 class AppState extends ChangeNotifier {
+  // IoT Simulation Controller
+  late IoTSimulationController _iotSimulation;
+
   // Simulated current power usage
   double _currentPowerUsage = 0.0; // Will be calculated from active devices
   final Random _random = Random();
@@ -304,7 +316,28 @@ class AppState extends ChangeNotifier {
   // App settings
   AppSettings _appSettings = AppSettings();
 
+  // Gamification State
+  GamificationState _gamificationState = GamificationState();
+  List<Achievement> _allAchievements = _initializeAchievements(); // Define all possible achievements
+
   AppState() {
+    // Initialize the IoT simulation controller with custom configuration
+    _iotSimulation = IoTSimulationController(
+      config: SimulationConfig(
+        enableRealisticLatency: true,
+        enableDeviceFailures: true,
+        deviceFailureProbability: 0.05, // 5% chance of failure
+        enablePeakHourPatterns: true,
+        enableWeatherEffects: true,
+        deviceStateUpdateIntervalSeconds: 3,
+        energyDataUpdateIntervalSeconds: 10,
+        notificationCheckIntervalMinutes: 15,
+      ),
+    );
+
+    // Initialize the controller
+    _initializeSimulation();
+
     // Calculate initial power usage based on active devices
     _recalculateTotalPowerUsage();
 
@@ -316,6 +349,58 @@ class AppState extends ChangeNotifier {
 
     // Rotate energy tips every minute
     _startTipRotation();
+
+    // Initialize Gamification (load saved state or set defaults)
+    _loadGamificationState(); // Placeholder for loading saved state
+    _generateInitialChallenges(); // Generate some starting challenges
+    _startGamificationUpdateTimer(); // Start timer for streaks/challenges
+  }
+
+  // Initialize the IoT simulation
+  Future<void> _initializeSimulation() async {
+    // Initialize the simulation controller
+    await _iotSimulation.initialize();
+
+    // Start the simulation with our current devices
+    _iotSimulation.startSimulation(
+      _devices,
+      _handleDevicesUpdated,
+      _handleAlertGenerated,
+    );
+  }
+
+  // Callback when devices are updated by the simulation
+  void _handleDevicesUpdated(List<Device> updatedDevices) {
+    // Update device states from the simulation
+    for (final updatedDevice in updatedDevices) {
+      final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
+      if (index != -1) {
+        _devices[index] = updatedDevice;
+      }
+    }
+
+    // Update energy usage values from simulation
+    _todayUsage = _iotSimulation.getTodayUsage();
+    _weeklyUsage = _iotSimulation.getWeeklyUsage();
+    _monthlyUsage = _iotSimulation.getMonthlyUsage();
+    _hourlyUsageData = _iotSimulation.getHourlyUsageData();
+    _yesterdayUsage = _iotSimulation.getYesterdayUsage();
+    _todayEstimatedUsage = _todayUsage; // Use actual usage as estimate
+
+    // Recalculate total power usage
+    _recalculateTotalPowerUsage();
+
+    notifyListeners();
+  }
+
+  // Callback when a new alert is generated
+  void _handleAlertGenerated(EnergyAlert alert) {
+    _energyAlerts.insert(0, alert);
+    // Keep only the most recent 20 alerts
+    if (_energyAlerts.length > 20) {
+      _energyAlerts.removeLast();
+    }
+    notifyListeners();
   }
 
   void _startUsageSimulation() {
@@ -486,6 +571,8 @@ class AppState extends ChangeNotifier {
   EnergyTip get currentTip => _energyTips[_currentTipIndex];
   List<EnergyAlert> get energyAlerts => _energyAlerts;
   AppSettings get appSettings => _appSettings;
+  GamificationState get gamificationState => _gamificationState;
+  List<Achievement> get allAchievements => _allAchievements;
 
   bool isUsageLowerThanYesterday() {
     return _todayEstimatedUsage < _yesterdayUsage;
@@ -497,38 +584,43 @@ class AppState extends ChangeNotifier {
   }
 
   // Toggle device status
-  void toggleDevice(String id) {
+  @override
+  Future<void> toggleDevice(String id) async {
     final index = _devices.indexWhere((device) => device.id == id);
     if (index != -1) {
       final device = _devices[index];
-      final newIsActive = !device.isActive;
+      bool wasActive = device.isActive;
 
-      // Determine the new current usage based on activation state
-      final newUsage =
-          newIsActive
-              ? (device.currentUsage > 0
-                  ? device.currentUsage
-                  : device.maxUsage * 0.8)
-              : 0.0;
+      // Use simulation controller to toggle the device with realistic latency and failures
+      bool success = await _iotSimulation.toggleDevice(device, (updatedDevice) {
+        // Update the device in our list
+        _devices[index] = updatedDevice;
 
-      // Update the device with new active state and usage
-      _devices[index] = Device(
-        id: device.id,
-        name: device.name,
-        type: device.type,
-        isActive: newIsActive,
-        currentUsage: newUsage,
-        iconPath: device.iconPath,
-        maxUsage: device.maxUsage,
-        usageHistory: device.usageHistory,
-        room: device.room,
-        settings: device.settings,
-      );
+        // Recalculate total power usage
+        _recalculateTotalPowerUsage();
 
-      // Recalculate total power usage based on the new device state
-      _recalculateTotalPowerUsage();
+        notifyListeners();
 
-      notifyListeners();
+        // Gamification: Award points for turning OFF a high-usage device
+        if (wasActive && !updatedDevice.isActive && updatedDevice.maxUsage > 500) {
+          _addPoints(5, "Turned off ${updatedDevice.name}");
+        }
+        // Gamification: Penalty for turning ON during peak hours? (Optional)
+        // final hour = DateTime.now().hour;
+        // if (!wasActive && updatedDevice.isActive && hour >= 16 && hour <= 21) {
+        //   _addPoints(-2, "Turned on ${updatedDevice.name} during peak");
+        // }
+      });
+
+      // If the toggle failed (simulated network error), notify the user
+      if (!success) {
+        _handleAlertGenerated(
+          EnergyAlert(
+            message: 'Failed to connect to ${device.name}. Please try again.',
+            time: DateTime.now(),
+          ),
+        );
+      }
     }
   }
 
@@ -539,9 +631,22 @@ class AppState extends ChangeNotifier {
   }
 
   // Remove device
-  void removeDevice(String id) {
-    _devices.removeWhere((device) => device.id == id);
-    notifyListeners();
+  Future<void> removeDevice(String id) async {
+    final deviceIndex = _devices.indexWhere((d) => d.id == id);
+    if (deviceIndex != -1) {
+      final device = _devices[deviceIndex];
+
+      // Simulate network latency for removing a device
+      if (_iotSimulation.config.enableRealisticLatency) {
+        final latency = _iotSimulation.config.getRandomLatency();
+        await Future.delayed(Duration(milliseconds: latency));
+      }
+
+      // Remove device
+      _devices.removeAt(deviceIndex);
+
+      notifyListeners();
+    }
   }
 
   // Mark alert as read
@@ -556,7 +661,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // Simulate device discovery
+  // Simulate device discovery using advanced simulation
   Future<void> scanForDevices() async {
     if (_isScanning) return;
 
@@ -564,80 +669,64 @@ class AppState extends ChangeNotifier {
     _discoveredDevices = [];
     notifyListeners();
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      // Use the device discovery simulator for realistic network behavior
+      final discoveredDevices = await _iotSimulation.discoverDevices(
+        _rooms.toList(),
+      );
 
-    // Generate random discovered devices
-    final existingIds = _devices.map((d) => d.id).toSet();
-    final Random random = Random();
-
-    // Generate 8-10 random devices
-    final deviceCount = random.nextInt(3) + 8; // 8-10 devices
-
-    for (int i = 0; i < deviceCount; i++) {
-      final deviceType = random.nextInt(
-        3,
-      ); // 0: AC, 1: WashingMachine, 2: Light
-      final roomIndex = random.nextInt(_rooms.length);
-      final room = _rooms[roomIndex];
-      final id = 'new_${DateTime.now().millisecondsSinceEpoch}_$i';
-
-      // Skip if somehow we generated a duplicate ID
-      if (existingIds.contains(id)) continue;
-
-      switch (deviceType) {
-        case 0:
-          _discoveredDevices.add(
-            SmartAC(
-              id: id,
-              name: '$room AC',
-              isActive: false,
-              currentUsage: 0,
-              room: room,
-            ),
-          );
-          break;
-        case 1:
-          _discoveredDevices.add(
-            SmartWashingMachine(
-              id: id,
-              name: '$room Washing Machine',
-              isActive: false,
-              currentUsage: 0,
-              room: room,
-            ),
-          );
-          break;
-        case 2:
-          _discoveredDevices.add(
-            SmartLight(
-              id: id,
-              name: '$room Light',
-              isActive: false,
-              currentUsage: 0,
-              room: room,
-            ),
-          );
-          break;
-      }
-    }
-
-    _isScanning = false;
-    notifyListeners();
-  }
-
-  // Add a discovered device to user's devices
-  void addDiscoveredDevice(String id) {
-    final deviceIndex = _discoveredDevices.indexWhere((d) => d.id == id);
-    if (deviceIndex != -1) {
-      final device = _discoveredDevices[deviceIndex];
-      _devices.add(device);
-      _discoveredDevices.removeAt(deviceIndex);
+      // Update discovered devices
+      _discoveredDevices = discoveredDevices;
+    } catch (e) {
+      // Handle discovery errors
+      _handleAlertGenerated(
+        EnergyAlert(
+          message: 'Device scan failed: ${e.toString()}. Please try again.',
+          time: DateTime.now(),
+        ),
+      );
+    } finally {
+      _isScanning = false;
       notifyListeners();
     }
   }
 
-  // Simulate device setting update with network delay
+  // Add a discovered device to user's devices with realistic connection simulation
+  Future<void> addDiscoveredDevice(String id) async {
+    final deviceIndex = _discoveredDevices.indexWhere((d) => d.id == id);
+    if (deviceIndex != -1) {
+      final device = _discoveredDevices[deviceIndex];
+
+      // Simulate connection to the device (may succeed or fail)
+      bool connectionSuccess = await _iotSimulation.connectToDevice(device);
+
+      if (connectionSuccess) {
+        // Add device to user's devices
+        _devices.add(device);
+        _discoveredDevices.removeAt(deviceIndex);
+
+        // Add a success notification
+        _handleAlertGenerated(
+          EnergyAlert(
+            message: 'Successfully connected to ${device.name}',
+            time: DateTime.now(),
+          ),
+        );
+      } else {
+        // Add a failure notification
+        _handleAlertGenerated(
+          EnergyAlert(
+            message: 'Failed to connect to ${device.name}. Please try again.',
+            time: DateTime.now(),
+          ),
+        );
+      }
+
+      notifyListeners();
+    }
+  }
+
+  // Simulate device setting update with advanced simulation controller
   Future<bool> updateDeviceSettings(
     String id,
     Map<String, dynamic> newSettings,
@@ -645,74 +734,28 @@ class AppState extends ChangeNotifier {
     _isUpdatingDevice = true;
     notifyListeners();
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 1500));
-
     final deviceIndex = _devices.indexWhere((d) => d.id == id);
     if (deviceIndex != -1) {
       final device = _devices[deviceIndex];
-      final currentSettings = device.settings ?? {};
 
-      // Create updated settings map
-      final updatedSettings = Map<String, dynamic>.from(currentSettings)
-        ..addAll(newSettings);
+      // Use the IoT simulation controller for realistic updates with network latency and potential failures
+      bool success = await _iotSimulation.updateDeviceSettings(
+        device,
+        newSettings,
+        (updatedDevice) {
+          // Update the device in our list with the new settings
+          _devices[deviceIndex] = updatedDevice;
 
-      // Create a new device with updated settings
-      Device updatedDevice;
+          // Recalculate total power usage
+          _recalculateTotalPowerUsage();
 
-      if (device is SmartAC) {
-        updatedDevice = SmartAC(
-          id: device.id,
-          name: device.name,
-          isActive: device.isActive,
-          currentUsage: _calculateNewUsage(device, updatedSettings),
-          room: device.room,
-        );
-        (updatedDevice as SmartAC).settings!.addAll(updatedSettings);
-      } else if (device is SmartWashingMachine) {
-        updatedDevice = SmartWashingMachine(
-          id: device.id,
-          name: device.name,
-          isActive: device.isActive,
-          currentUsage: _calculateNewUsage(device, updatedSettings),
-          room: device.room,
-        );
-        (updatedDevice as SmartWashingMachine).settings!.addAll(
-          updatedSettings,
-        );
-      } else if (device is SmartLight) {
-        updatedDevice = SmartLight(
-          id: device.id,
-          name: device.name,
-          isActive: device.isActive,
-          currentUsage: _calculateNewUsage(device, updatedSettings),
-          room: device.room,
-        );
-        (updatedDevice as SmartLight).settings!.addAll(updatedSettings);
-      } else {
-        // Generic device
-        updatedDevice = Device(
-          id: device.id,
-          name: device.name,
-          type: device.type,
-          isActive: device.isActive,
-          currentUsage: _calculateNewUsage(device, updatedSettings),
-          iconPath: device.iconPath,
-          maxUsage: device.maxUsage,
-          room: device.room,
-          settings: updatedSettings,
-          usageHistory: device.usageHistory,
-        );
-      }
+          notifyListeners();
+        },
+      );
 
-      _devices[deviceIndex] = updatedDevice;
       _isUpdatingDevice = false;
       notifyListeners();
 
-      // Using Random() class properly
-      final randomGenerator = Random();
-      // Simulate success with 95% probability
-      final success = randomGenerator.nextDouble() > 0.05;
       return success;
     }
 
@@ -913,9 +956,330 @@ class AppState extends ChangeNotifier {
     return '$symbol${amount.toStringAsFixed(2)}';
   }
 
+  // Sustainability metrics calculation methods
+  double calculateAverageDailyUsage() {
+    // Calculate average over the past week (or use simulated data)
+    return _todayUsage;
+  }
+
+  int getActiveDevicesCount() {
+    return _devices.where((device) => device.isActive).length;
+  }
+
+  bool hasSolarPanels() {
+    // Check if solar panels are configured in the home configuration
+    return _appSettings.homeConfiguration.hasSolarPanels;
+  }
+
+  bool hasSmartThermostat() {
+    // Check if smart thermostat exists in devices
+    return _devices.any(
+      (device) =>
+          device.type == 'HVAC' &&
+          device.settings != null &&
+          device.settings!.containsKey('temperature'),
+    );
+  }
+
+  bool usesLedLighting() {
+    // Check if LED lighting is configured
+    return _appSettings.homeConfiguration.usesLedLighting;
+  }
+
+  double calculatePeakHourUsagePercent() {
+    // Calculate percentage of energy used during peak hours (typically 4pm-9pm)
+    // This is a simplified calculation for demo purposes
+    if (_hourlyUsageData.isEmpty) return 50.0;
+
+    double totalUsage = _hourlyUsageData.reduce((a, b) => a + b);
+    if (totalUsage <= 0) return 50.0;
+
+    // Get current hour and calculate appropriate peak hours
+    final now = DateTime.now();
+    final currentHour = now.hour;
+
+    // Calculate peak hour indices in the hourly data (last 24 hours)
+    List<int> peakHourIndices = [];
+    for (int i = 0; i < _hourlyUsageData.length; i++) {
+      // Map index to hour of day
+      int hour = (currentHour - 23 + i) % 24;
+      // Consider 4pm-9pm (16-21) as peak hours
+      if (hour >= 16 && hour <= 21) {
+        peakHourIndices.add(i);
+      }
+    }
+
+    // Calculate usage during peak hours
+    double peakUsage = 0;
+    for (int i in peakHourIndices) {
+      if (i < _hourlyUsageData.length) {
+        peakUsage += _hourlyUsageData[i];
+      }
+    }
+
+    // Calculate percentage
+    return (peakUsage / totalUsage) * 100;
+  }
+
+  List<double> getRecentDailyUsage() {
+    // Return the last 7 days of daily usage (simulated data)
+    return [
+      _yesterdayUsage * 0.95,
+      _yesterdayUsage * 1.05,
+      _yesterdayUsage * 0.9,
+      _yesterdayUsage * 1.1,
+      _yesterdayUsage * 1.0,
+      _yesterdayUsage * 0.98,
+      _todayUsage,
+    ];
+  }
+
   @override
   void dispose() {
+    // Stop the timers
     _usageUpdateTimer?.cancel();
+
+    // Stop the IoT simulation
+    _iotSimulation.stopSimulation();
+
     super.dispose();
   }
+
+  // --- Gamification Logic ---
+
+  void _loadGamificationState() {
+    // TODO: Load saved gamification state from persistent storage (e.g., SharedPreferences)
+    // For now, use default state.
+    _gamificationState = GamificationState(
+      // Example initial state
+      points: 120,
+      streakDays: 3,
+      lastStreakUpdate: DateTime.now().subtract(Duration(days: 1)),
+      earnedAchievements: _allAchievements.where((a) => a.id == 'first_login').map((a) => a.copyWith(earned: true)).toList(),
+    );
+  }
+
+  void _saveGamificationState() {
+    // TODO: Save current gamification state to persistent storage
+  }
+
+  static List<Achievement> _initializeAchievements() {
+    return const [
+      Achievement(id: 'first_login', name: 'Welcome Aboard!', description: 'Logged in for the first time.', icon: Icons.door_front_door, pointsReward: 50),
+      Achievement(id: 'first_score', name: 'Score Explorer', description: 'Checked your sustainability score.', icon: Icons.insights, pointsReward: 20),
+      Achievement(id: 'streak_3', name: 'Getting Started', description: 'Maintained a 3-day saving streak.', icon: Icons.local_fire_department, pointsReward: 100),
+      Achievement(id: 'streak_7', name: 'Consistent Saver', description: 'Maintained a 7-day saving streak.', icon: Icons.whatshot, pointsReward: 250),
+      Achievement(id: 'challenge_1', name: 'Challenge Accepted', description: 'Completed your first challenge.', icon: Icons.flag, pointsReward: 75),
+      Achievement(id: 'challenge_5', name: 'Challenge Master', description: 'Completed 5 challenges.', icon: Icons.emoji_events, pointsReward: 300),
+      Achievement(id: 'solar_user', name: 'Solar Powered', description: 'Using solar panels.', icon: Icons.wb_sunny, pointsReward: 500),
+      Achievement(id: 'led_user', name: 'LED Illuminator', description: 'Using LED lighting.', icon: Icons.lightbulb, pointsReward: 150),
+      Achievement(id: 'thermostat_user', name: 'Climate Controller', description: 'Using a smart thermostat.', icon: Icons.thermostat, pointsReward: 200),
+      Achievement(id: 'off_peak_hero', name: 'Off-Peak Hero', description: 'Significantly reduced peak hour usage.', icon: Icons.access_time_filled, pointsReward: 250),
+    ];
+  }
+
+  void _generateInitialChallenges() {
+    // Generate some simple starting challenges if none are active
+    if (_gamificationState.activeChallenges.isEmpty) {
+      List<Challenge> challenges = [
+        Challenge(
+          id: 'daily_usage_1',
+          title: 'Reduce Daily Usage',
+          description: 'Use less than 15 kWh today.',
+          type: ChallengeType.daily,
+          pointsReward: 50,
+          icon: Icons.trending_down,
+          expiryDate: DateTime.now().add(Duration(days: 1)),
+          targetValue: 15.0,
+          unit: 'kWh',
+        ),
+        Challenge(
+          id: 'peak_avoid_1',
+          title: 'Avoid Peak Hours',
+          description: 'Keep peak hour usage below 30% today.',
+          type: ChallengeType.daily,
+          pointsReward: 75,
+          icon: Icons.access_time,
+          expiryDate: DateTime.now().add(Duration(days: 1)),
+          targetValue: 30.0,
+          unit: '%',
+        ),
+      ];
+      _gamificationState = _gamificationState.copyWith(activeChallenges: challenges);
+    }
+  }
+
+  void _startGamificationUpdateTimer() {
+    // Timer to check streaks and challenge status periodically (e.g., every hour)
+    Timer.periodic(const Duration(hours: 1), (timer) {
+      _updateStreakCounter();
+      _updateChallengeProgress();
+      _checkAchievements();
+      _saveGamificationState(); // Save state periodically
+      notifyListeners();
+    });
+  }
+
+  void _updateStreakCounter() {
+    // Example streak logic: Did the user improve or maintain good usage yesterday?
+    final now = DateTime.now();
+    final lastUpdate = _gamificationState.lastStreakUpdate;
+
+    if (lastUpdate == null || now.difference(lastUpdate).inDays >= 1) {
+      bool streakContinued = _yesterdayUsage < 25.0; // Example: Streak continues if yesterday < 25 kWh
+
+      int currentStreak = _gamificationState.streakDays;
+      DateTime newLastUpdate = DateTime(now.year, now.month, now.day); // Mark today as updated
+
+      if (streakContinued) {
+        // If it's been exactly one day since last update, increment streak
+        if (lastUpdate != null && newLastUpdate.difference(lastUpdate).inDays == 1) {
+          currentStreak++;
+        } else {
+          // Otherwise, start a new streak of 1 day
+          currentStreak = 1;
+        }
+      } else {
+        // If streak condition not met, reset streak unless it was already updated today
+        if (lastUpdate == null || newLastUpdate.difference(lastUpdate).inDays >= 1) {
+          currentStreak = 0;
+        }
+      }
+
+      _gamificationState = _gamificationState.copyWith(
+        streakDays: currentStreak,
+        lastStreakUpdate: newLastUpdate,
+      );
+    }
+  }
+
+  void _updateChallengeProgress() {
+    List<Challenge> updatedChallenges = List.from(_gamificationState.activeChallenges);
+    bool challengesChanged = false;
+
+    for (int i = 0; i < updatedChallenges.length; i++) {
+      Challenge challenge = updatedChallenges[i];
+      if (challenge.status == ChallengeStatus.active) {
+        // Check expiry
+        if (DateTime.now().isAfter(challenge.expiryDate)) {
+          challenge.status = ChallengeStatus.failed;
+          challengesChanged = true;
+          continue;
+        }
+
+        // Update progress based on challenge type (example logic)
+        double currentProgress = 0.0;
+        if (challenge.id == 'daily_usage_1') {
+          // Progress is inverse of usage compared to target (lower is better)
+          currentProgress = 1.0 - (_todayUsage / challenge.targetValue);
+        } else if (challenge.id == 'peak_avoid_1') {
+          // Progress is inverse of peak usage % compared to target
+          double peakPercent = calculatePeakHourUsagePercent();
+          currentProgress = 1.0 - (peakPercent / challenge.targetValue);
+        }
+        // Clamp progress between 0 and 1
+        challenge.progress = currentProgress.clamp(0.0, 1.0);
+
+        // Check completion
+        if (challenge.progress >= 1.0) {
+          challenge.status = ChallengeStatus.completed;
+          _addPoints(challenge.pointsReward, "Challenge: ${challenge.title}");
+          challengesChanged = true;
+          _checkAchievements(challengeCompleted: true); // Check if completing this triggers an achievement
+        }
+        updatedChallenges[i] = challenge; // Update the list
+      }
+    }
+
+    if (challengesChanged) {
+      _gamificationState = _gamificationState.copyWith(activeChallenges: updatedChallenges);
+      // Optionally, generate new challenges to replace completed/failed ones
+      // _generateNewChallengesIfNeeded();
+    }
+  }
+
+  void _addPoints(int pointsToAdd, String reason) {
+    int newPoints = _gamificationState.points + pointsToAdd;
+    int currentLevel = _gamificationState.calculateLevel();
+    _gamificationState = _gamificationState.copyWith(points: newPoints);
+    int newLevel = _gamificationState.calculateLevel();
+
+    // Handle level up
+    if (newLevel > currentLevel) {
+      _handleAlertGenerated(EnergyAlert(
+        message: "Level Up! You reached Level $newLevel!",
+        time: DateTime.now(),
+      ));
+      // TODO: Add level up rewards?
+    }
+
+    print("Points added: $pointsToAdd for $reason. Total: $newPoints"); // Debug log
+  }
+
+  void _checkAchievements({bool scoreChecked = false, bool challengeCompleted = false}) {
+    List<Achievement> currentlyEarned = List.from(_gamificationState.earnedAchievements);
+    bool achievementEarned = false;
+
+    for (Achievement achievement in _allAchievements) {
+      // Check if already earned
+      if (currentlyEarned.any((earned) => earned.id == achievement.id)) {
+        continue;
+      }
+
+      // Check conditions for earning the achievement
+      bool earnedNow = false;
+      switch (achievement.id) {
+        case 'first_score':
+          earnedNow = scoreChecked;
+          break;
+        case 'streak_3':
+          earnedNow = _gamificationState.streakDays >= 3;
+          break;
+        case 'streak_7':
+          earnedNow = _gamificationState.streakDays >= 7;
+          break;
+        case 'challenge_1':
+          // Earned when the first challenge is completed
+          earnedNow = challengeCompleted && _gamificationState.activeChallenges.where((c) => c.status == ChallengeStatus.completed).length == 1;
+          break;
+        case 'challenge_5':
+          earnedNow = _gamificationState.activeChallenges.where((c) => c.status == ChallengeStatus.completed).length >= 5;
+          break;
+        case 'solar_user':
+          earnedNow = hasSolarPanels();
+          break;
+        case 'led_user':
+          earnedNow = usesLedLighting();
+          break;
+        case 'thermostat_user':
+          earnedNow = hasSmartThermostat();
+          break;
+        case 'off_peak_hero':
+          earnedNow = calculatePeakHourUsagePercent() < 20.0; // Example threshold
+          break;
+        // Add cases for other achievements
+      }
+
+      if (earnedNow) {
+        currentlyEarned.add(achievement.copyWith(earned: true));
+        _addPoints(achievement.pointsReward, "Achievement: ${achievement.name}");
+        _handleAlertGenerated(EnergyAlert(
+          message: "Achievement Unlocked: ${achievement.name}!",
+          time: DateTime.now(),
+        ));
+        achievementEarned = true;
+      }
+    }
+
+    if (achievementEarned) {
+      _gamificationState = _gamificationState.copyWith(earnedAchievements: currentlyEarned);
+    }
+  }
+
+  // Call this when the score page is viewed
+  void userViewedScorePage() {
+    _checkAchievements(scoreChecked: true);
+  }
+
+  // --- End Gamification Logic ---
 }

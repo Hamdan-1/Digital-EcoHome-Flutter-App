@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import '../main.dart';
+import '../theme.dart';
+import '../providers/theme_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,14 +22,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
-    // Set system overlay style for status bar
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
 
     // Initialize animations
     _animationController = AnimationController(
@@ -79,8 +74,20 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    // Set system overlay style for status bar based on theme
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            isDarkMode ? Brightness.light : Brightness.dark,
+      ),
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : Colors.white,
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -92,27 +99,36 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo goes here - choosing based on system brightness
+                    // Logo goes here - choosing based on current theme
                     Image.asset(
-                      Theme.of(context).brightness == Brightness.dark
+                      isDarkMode
                           ? 'Digital EcoHome Logo dark Mode.png'
                           : 'Digital EcoHome logo Light Mode.png',
                       width: 200,
                       height: 200,
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Digital EcoHome',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4CAF50),
+                        color:
+                            isDarkMode
+                                ? AppTheme.darkPrimaryColor
+                                : AppTheme.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Smart Living, Sustainable Future',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF718096)),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color:
+                            isDarkMode
+                                ? AppTheme.darkTextSecondaryColor
+                                : AppTheme.textSecondaryColor,
+                      ),
                     ),
                   ],
                 ),

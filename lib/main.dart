@@ -8,7 +8,11 @@ import 'pages/dashboard_page.dart';
 import 'pages/devices_page.dart';
 import 'pages/reports_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/chat_page.dart';
+import 'pages/sustainability_score_page.dart';
 import 'providers/theme_provider.dart';
+import 'services/ai_service.dart';
+import 'services/notification_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,11 +23,19 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
 
+  // OpenRouter API key for AI chat
+  const String openRouterApiKey =
+      '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';
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        Provider<AiService>(
+          create: (context) => AiService(apiKey: openRouterApiKey),
+        ),
+        ChangeNotifierProvider(create: (context) => InAppNotificationService()),
       ],
       child: const MyApp(),
     ),
@@ -77,8 +89,10 @@ class _MainNavigationState extends State<MainNavigation>
   final List<Widget> _pages = [
     const DashboardPage(),
     const DevicesPage(),
+    const ChatPage(),
     const ReportsPage(),
     const SettingsPage(),
+    const SustainabilityScorePage(), // New Page
   ];
 
   @override
@@ -125,7 +139,24 @@ class _MainNavigationState extends State<MainNavigation>
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        child: _pages[_currentIndex],
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.05, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_currentIndex),
+          child: _pages[_currentIndex],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -140,15 +171,27 @@ class _MainNavigationState extends State<MainNavigation>
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, 'Home', Icons.home),
-                _buildNavItem(1, 'Devices', Icons.devices),
-                _buildNavItem(2, 'Reports', Icons.insert_chart),
-                _buildNavItem(3, 'Settings', Icons.settings),
-              ],
+            padding: const EdgeInsets.symmetric(
+              vertical: 8,
+            ), // Adjusted padding
+            // Wrap the Row in a SingleChildScrollView for horizontal scrolling
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                // Use MainAxisAlignment.start since it's scrollable
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Add some padding around the items if needed
+                  const SizedBox(width: 8), // Leading padding
+                  _buildNavItem(0, 'Home', Icons.home),
+                  _buildNavItem(1, 'Devices', Icons.devices),
+                  _buildNavItem(2, 'Chat', Icons.chat_bubble_outline),
+                  _buildNavItem(3, 'Reports', Icons.insert_chart),
+                  _buildNavItem(4, 'Settings', Icons.settings),
+                  _buildNavItem(5, 'Score', Icons.eco),
+                  const SizedBox(width: 8), // Trailing padding
+                ],
+              ),
             ),
           ),
         ),

@@ -1,8 +1,7 @@
 // File: home_configuration.dart
 // Contains home configuration settings for the Digital EcoHome app
 
-class HomeConfiguration {
-  // Home basic information
+class HomeConfiguration {  // Home basic information
   String homeName;
   double homeSize; // in square feet/meters
   int occupants;
@@ -10,6 +9,10 @@ class HomeConfiguration {
 
   // Rooms in the house
   List<Room> rooms;
+  
+  // Energy efficiency features
+  bool hasSolarPanels;
+  bool usesLedLighting;
 
   // Energy goals
   double monthlyEnergyGoal; // in kWh
@@ -20,7 +23,6 @@ class HomeConfiguration {
   String accountNumber;
   String utilityPlan;
   String meterNumber;
-
   // Default constructor with initial values
   HomeConfiguration({
     this.homeName = 'My Home',
@@ -34,6 +36,8 @@ class HomeConfiguration {
     this.accountNumber = '',
     this.utilityPlan = '',
     this.meterNumber = '',
+    this.hasSolarPanels = false,
+    this.usesLedLighting = true,
   }) : this.rooms =
            rooms ??
            [
