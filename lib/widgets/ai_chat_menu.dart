@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
+import '../widgets/optimized_loading_indicator.dart'; // Import OptimizedLoadingIndicator
 
 class ChatMessage {
   final String text;
@@ -12,7 +13,7 @@ class ChatMessage {
 }
 
 class AiChatMenu extends StatefulWidget {
-  const AiChatMenu({Key? key}) : super(key: key);
+  const AiChatMenu({super.key});
 
   @override
   State<AiChatMenu> createState() => _AiChatMenuState();
@@ -128,7 +129,7 @@ class _AiChatMenuState extends State<AiChatMenu>
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Card(
-                color: theme.colorScheme.surfaceVariant,
+                color: theme.colorScheme.surfaceContainerHighest,
                 elevation: 0,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -207,13 +208,10 @@ class _AiChatMenuState extends State<AiChatMenu>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.secondary,
-                    ),
+                  // Replace CircularProgressIndicator with OptimizedLoadingIndicator
+                  OptimizedLoadingIndicator(
+                    size: 24, // Match original SizedBox size
+                    color: theme.colorScheme.secondary, // Use original color
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -249,7 +247,7 @@ class _AiChatMenuState extends State<AiChatMenu>
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        backgroundColor: theme.colorScheme.surfaceVariant,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
                         onPressed: () {
                           _handleSubmitted(suggestion, aiService);
                         },
@@ -283,9 +281,7 @@ class _AiChatMenuState extends State<AiChatMenu>
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceVariant.withOpacity(
-                        0.5,
-                      ),
+                      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Corrected alpha calculation
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
                         vertical: 10.0,
@@ -302,7 +298,7 @@ class _AiChatMenuState extends State<AiChatMenu>
                     color:
                         _isComposing
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withOpacity(0.5),
+                            : theme.colorScheme.onSurface.withAlpha((0.5 * 255).round()),
                     onPressed:
                         _isComposing
                             ? () => _handleSubmitted(
@@ -349,8 +345,8 @@ class _AiChatMenuState extends State<AiChatMenu>
               decoration: BoxDecoration(
                 color:
                     isUser
-                        ? theme.colorScheme.primary.withOpacity(0.1)
-                        : theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                        ? theme.colorScheme.primary.withAlpha((0.1 * 255).round())
+                        : theme.colorScheme.secondaryContainer.withAlpha((0.3 * 255).round()),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16.0),
                   topRight: const Radius.circular(16.0),
@@ -374,7 +370,7 @@ class _AiChatMenuState extends State<AiChatMenu>
                   Text(
                     _formatTimestamp(message.timestamp),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withAlpha((0.6 * 255).round()),
                       fontSize: 10.0,
                     ),
                   ),

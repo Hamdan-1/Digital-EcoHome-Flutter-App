@@ -31,7 +31,7 @@ class IoTSimulationController with ChangeNotifier {
   bool _isRunning = false;
   
   // Track device connection status
-  final Map<String, bool> _deviceConnectionStatus = {};
+  // final Map<String, bool> _deviceConnectionStatus = {}; // Unused field
   
   // Constructor - initializes all simulation components
   IoTSimulationController({SimulationConfig? config}) 
@@ -354,7 +354,7 @@ class IoTSimulationController with ChangeNotifier {
     // Save device states
     await _storage.saveDeviceStates(devices);
     
-    // TODO: Add energy history saving
+    // Placeholder: Add energy history saving
     // This would require additional methods to access the energy data from the simulator
   }
   
@@ -365,7 +365,7 @@ class IoTSimulationController with ChangeNotifier {
     
     final lastUpdate = await _storage.getLastUpdateTime();
     if (lastUpdate != null) {
-      print('Last simulation state saved: ${lastUpdate.toIso8601String()}');
+      // print('Last simulation state saved: ${lastUpdate.toIso8601String()}'); // Removed print
     }
   }
   

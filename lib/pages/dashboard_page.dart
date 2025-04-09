@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
+import '../models/data_status.dart'; // Import DataStatus
 import '../theme.dart';
 import '../widgets/usage_chart.dart';
 import '../widgets/notification_badge.dart';
 import '../widgets/notification_panel.dart';
 import '../services/notification_service.dart';
 import '../utils/notification_helper.dart';
+// import '../utils/error_handler.dart'; // Unused import
+import '../widgets/optimized_loading_indicator.dart';
+// Removed Demo Mode imports
 import 'dart:math' as math;
 
 class DashboardPage extends StatefulWidget {
@@ -82,7 +86,8 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ],
               ),
-              actions: [
+             actions: [
+               // Demo Mode Activation Button Removed
                 NotificationBadge(
                   child: IconButton(
                     icon: Icon(
@@ -129,8 +134,9 @@ class _DashboardPageState extends State<DashboardPage>
             // Energy Overview Card
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildEnergyOverviewCard(appState),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              // KeyedSubtree removed
+              child: _buildEnergyOverviewCard(appState),
               ),
             ),
 
@@ -154,7 +160,9 @@ class _DashboardPageState extends State<DashboardPage>
                       child: Text(
                         'See All',
                         style: TextStyle(
-                          color: AppTheme.getPrimaryColor(context),
+                          // Ensure sufficient contrast for TextButton, potentially using secondary color if primary fails
+                          color: AppTheme.getSecondaryColor(context), // Or a dedicated theme color
+                          fontWeight: FontWeight.bold, // Increase weight for better visibility
                         ),
                       ),
                     ),
@@ -166,8 +174,8 @@ class _DashboardPageState extends State<DashboardPage>
             // Quick Device Status List with enhanced animation
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 140,
-                child: _buildDeviceStatusList(appState),
+                height: 140, // Keep height for layout consistency
+                child: _buildDeviceStatusSection(context, appState), // Use new wrapper method
               ),
             ),
 
@@ -188,13 +196,15 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(height: 16),
 
-                    // Energy Tip of the Day Card
-                    _buildEnergyTipCard(appState),
+                  // Energy Tip of the Day Card
+                  // KeyedSubtree removed
+                  _buildEnergyTipCard(appState),
 
                     const SizedBox(height: 16),
 
-                    // Usage Comparison Card
-                    _buildUsageComparisonCard(appState),
+                  // Usage Comparison Card
+                  // KeyedSubtree removed
+                  _buildUsageComparisonCard(appState),
 
                     const SizedBox(height: 16),
 
@@ -248,7 +258,8 @@ class _DashboardPageState extends State<DashboardPage>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    // Use a theme-aware color with good contrast on the gradient
+                    color: AppTheme.darkTextPrimaryColor,
                   ),
                 ),
                 Container(
@@ -257,19 +268,19 @@ class _DashboardPageState extends State<DashboardPage>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withAlpha((0.2 * 255).round()),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.bolt, color: Colors.white, size: 16),
+                      Icon(Icons.bolt, color: AppTheme.darkTextPrimaryColor, size: 16),
                       SizedBox(width: 4),
                       Text(
                         'Live',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14, // Increased size for better readability
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.darkTextPrimaryColor,
                         ),
                       ),
                     ],
@@ -296,12 +307,12 @@ class _DashboardPageState extends State<DashboardPage>
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppTheme.darkTextPrimaryColor,
                         shadows:
                             isDarkMode
                                 ? [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withAlpha((0.3 * 255).round()),
                                     offset: const Offset(0, 2),
                                     blurRadius: 4,
                                   ),
@@ -316,7 +327,7 @@ class _DashboardPageState extends State<DashboardPage>
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w300,
-                          color: Colors.white.withOpacity(0.9),
+                          color: AppTheme.darkTextPrimaryColor.withAlpha((0.9 * 255).round()),
                         ),
                       ),
                     ),
@@ -335,9 +346,9 @@ class _DashboardPageState extends State<DashboardPage>
               child: UsageChart(
                 data: appState.hourlyUsageData,
                 maxHeight: 80,
-                lineColor: Colors.white,
-                gradientStartColor: Colors.white.withOpacity(0.5),
-                gradientEndColor: Colors.white.withOpacity(0.0),
+                lineColor: AppTheme.darkTextPrimaryColor,
+                gradientStartColor: AppTheme.darkTextPrimaryColor.withAlpha((0.5 * 255).round()),
+                gradientEndColor: AppTheme.darkTextPrimaryColor.withAlpha((0.0 * 255).round()),
               ),
             ),
 
@@ -350,22 +361,22 @@ class _DashboardPageState extends State<DashboardPage>
                 Text(
                   '24h ago',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
+                    fontSize: 14, // Increased size
+                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
                   ),
                 ),
                 Text(
                   '12h ago',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
+                    fontSize: 14, // Increased size
+                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
                   ),
                 ),
                 Text(
                   'Now',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(isDarkMode ? 0.9 : 0.7),
+                    fontSize: 14, // Increased size
+                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
                   ),
                 ),
               ],
@@ -379,8 +390,8 @@ class _DashboardPageState extends State<DashboardPage>
               decoration: BoxDecoration(
                 color:
                     isDarkMode
-                        ? Colors.black.withOpacity(0.3)
-                        : Colors.white.withOpacity(0.2),
+                        ? Colors.black.withAlpha((0.3 * 255).round())
+                        : Colors.white.withAlpha((0.2 * 255).round()),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -390,13 +401,13 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       Icon(
                         Icons.attach_money,
-                        color: Colors.white,
+                        color: AppTheme.darkTextPrimaryColor,
                         size: 20,
                         shadows:
                             isDarkMode
                                 ? [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.5),
+                                    color: Colors.black.withAlpha((0.5 * 255).round()),
                                     offset: const Offset(0, 1),
                                     blurRadius: 2,
                                   ),
@@ -409,12 +420,12 @@ class _DashboardPageState extends State<DashboardPage>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.darkTextPrimaryColor,
                           shadows:
                               isDarkMode
                                   ? [
                                     Shadow(
-                                      color: Colors.black.withOpacity(0.5),
+                                      color: Colors.black.withAlpha((0.5 * 255).round()),
                                       offset: const Offset(0, 1),
                                       blurRadius: 2,
                                     ),
@@ -436,12 +447,12 @@ class _DashboardPageState extends State<DashboardPage>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.darkTextPrimaryColor,
                           shadows:
                               isDarkMode
                                   ? [
                                     Shadow(
-                                      color: Colors.black.withOpacity(0.5),
+                                      color: Colors.black.withAlpha((0.5 * 255).round()),
                                       offset: const Offset(0, 1),
                                       blurRadius: 2,
                                     ),
@@ -460,16 +471,73 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Widget _buildDeviceStatusList(AppState appState) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: math.min(appState.devices.length, 5),
-      itemBuilder: (context, index) {
-        final device = appState.devices[index];
-        return _buildDeviceStatusCard(context, device, appState);
-      },
-    );
+  // Wrapper method to handle device list status for the horizontal list
+  Widget _buildDeviceStatusSection(BuildContext context, AppState appState) {
+    switch (appState.devicesStatus) {
+      case DataStatus.initial:
+      case DataStatus.loading:
+        // Show a compact loading indicator suitable for the horizontal space
+        return const Center(child: OptimizedLoadingIndicator(size: 24));
+      case DataStatus.error:
+        // Show a compact error message
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              appState.devicesError ?? 'Could not load devices',
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      case DataStatus.empty:
+         // Show an empty state message for the horizontal list
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              'No devices added yet.',
+              style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      case DataStatus.success:
+        // If successful and data is available, build the list
+        return _buildDeviceStatusList(context, appState);
+    }
+  }
+
+  // Builds the actual horizontal list view when data is available
+  Widget _buildDeviceStatusList(BuildContext context, AppState appState) {
+     // Take only the first 5 devices for the quick access list
+     final quickAccessDevices = appState.devices.take(5).toList();
+
+     if (quickAccessDevices.isEmpty) {
+        // This case should technically be covered by DataStatus.empty,
+        // but added as a safeguard or if filtering logic changes.
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              'No devices to display.',
+              style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+     }
+
+     return ListView.builder(
+       scrollDirection: Axis.horizontal,
+       padding: const EdgeInsets.symmetric(horizontal: 16),
+       itemCount: quickAccessDevices.length,
+       itemBuilder: (context, index) {
+         final device = quickAccessDevices[index];
+         // Pass context to the card builder if needed for theming inside it
+         return _buildDeviceStatusCard(context, device, appState);
+       },
+     );
   }
 
   Widget _buildDeviceStatusCard(
@@ -477,7 +545,7 @@ class _DashboardPageState extends State<DashboardPage>
     Device device,
     AppState appState,
   ) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark; // Unused variable
     final primaryColor = AppTheme.getPrimaryColor(context);
 
     return Padding(
@@ -509,9 +577,7 @@ class _DashboardPageState extends State<DashboardPage>
                         color:
                             device.isActive
                                 ? primaryColor
-                                : isDarkMode
-                                ? Colors.grey.shade500
-                                : Colors.grey.shade400,
+                                : AppTheme.getTextSecondaryColor(context), // Use theme color for inactive state
                         size: device.isActive ? 26 : 24,
                       ),
                     ),
@@ -523,7 +589,8 @@ class _DashboardPageState extends State<DashboardPage>
                         appState.toggleDevice(device.id);
                       },
                       activeColor: primaryColor,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      // Remove shrinkWrap to ensure default minimum touch target size (48x48)
+                      // materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],
                 ),
@@ -552,11 +619,11 @@ class _DashboardPageState extends State<DashboardPage>
                       device.isActive ? '${value.toStringAsFixed(0)} W' : 'Off',
                       style: TextStyle(
                         fontSize: 12,
-                        color:
-                            device.isActive
-                                ? primaryColor
-                                : AppTheme.getTextSecondaryColor(context),
-                        fontWeight: FontWeight.bold,
+                        color: device.isActive
+                            // Use a color with better contrast for active state, e.g., secondary text color
+                            ? AppTheme.getTextSecondaryColor(context)
+                            : AppTheme.getTextSecondaryColor(context),
+                        fontWeight: device.isActive ? FontWeight.bold : FontWeight.normal, // Keep bold only when active
                       ),
                     );
                   },
@@ -584,7 +651,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb, color: Colors.amber),
+                Icon(Icons.lightbulb, color: AppTheme.getSecondaryColor(context)), // Use theme color
                 const SizedBox(width: 8),
                 Text(
                   'Energy Tip of the Day',
@@ -605,8 +672,8 @@ class _DashboardPageState extends State<DashboardPage>
                   decoration: BoxDecoration(
                     color:
                         isDarkMode
-                            ? primaryColor.withOpacity(0.15)
-                            : primaryColor.withOpacity(0.1),
+                            ? primaryColor.withAlpha((0.15 * 255).round())
+                            : primaryColor.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(tip.icon, color: primaryColor),
@@ -662,16 +729,16 @@ class _DashboardPageState extends State<DashboardPage>
                 color:
                     isDarkMode
                         ? (isLower
-                            ? Colors.green.withOpacity(0.3)
-                            : Colors.red.withOpacity(0.3))
+                            ? AppTheme.getSuccessColor(context).withAlpha((0.3 * 255).round()) // Use theme color
+                            : AppTheme.getErrorColor(context).withAlpha((0.3 * 255).round())) // Use theme color
                         : (isLower
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1)),
+                            ? AppTheme.getSuccessColor(context).withAlpha((0.1 * 255).round()) // Use theme color
+                            : AppTheme.getErrorColor(context).withAlpha((0.1 * 255).round())), // Use theme color
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 isLower ? Icons.trending_down : Icons.trending_up,
-                color: isLower ? Colors.green : Colors.red,
+                color: isLower ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
                 size: 30,
               ),
             ),
@@ -699,7 +766,7 @@ class _DashboardPageState extends State<DashboardPage>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isLower ? Colors.green : Colors.red,
+                            color: isLower ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
                           ),
                         ),
                         TextSpan(
@@ -728,8 +795,17 @@ class _DashboardPageState extends State<DashboardPage>
     final alerts = appState.energyAlerts;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    // Show a user-friendly message if there are no alerts
     if (alerts.isEmpty) {
-      return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(
+          child: Text(
+            'No alerts right now. Looking good!',
+            style: TextStyle(color: Theme.of(context).disabledColor),
+          ),
+        ),
+      );
     }
 
     return Column(
@@ -737,7 +813,7 @@ class _DashboardPageState extends State<DashboardPage>
       children: [
         Row(
           children: [
-            Icon(Icons.notifications, color: Colors.orange),
+            Icon(Icons.notifications, color: AppTheme.getSecondaryColor(context)), // Use theme color
             const SizedBox(width: 8),
             Text(
               'Alerts',
@@ -764,11 +840,11 @@ class _DashboardPageState extends State<DashboardPage>
               color:
                   isDarkMode
                       ? (alert.isRead
-                          ? Colors.grey.shade800
-                          : Color(0xFF5D4037))
+                          ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()) // Use theme color
+                          : Theme.of(context).colorScheme.errorContainer.withAlpha((0.4 * 255).round())) // Use theme color (e.g., error container for unread)
                       : (alert.isRead
-                          ? Colors.grey.shade50
-                          : Colors.orange.shade50),
+                          ? Theme.of(context).colorScheme.surfaceContainerHighest // Use theme color
+                          : AppTheme.getSecondaryColor(context).withAlpha((0.1 * 255).round())), // Use theme color (e.g., secondary accent for unread)
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -796,10 +872,7 @@ class _DashboardPageState extends State<DashboardPage>
                         : IconButton(
                           icon: Icon(
                             Icons.check_circle_outline,
-                            color:
-                                isDarkMode
-                                    ? Colors.orange.shade300
-                                    : Colors.orange,
+                            color: AppTheme.getSecondaryColor(context), // Use theme color consistently
                           ),
                           onPressed: () => appState.markAlertAsRead(index),
                         ),
@@ -875,7 +948,7 @@ class _DashboardPageState extends State<DashboardPage>
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha((0.3 * 255).round()), // Use theme color
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

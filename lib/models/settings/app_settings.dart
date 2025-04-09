@@ -29,11 +29,11 @@ class AppSettings {
     DeviceManagement? deviceManagement,
     AdvancedSettings? advancedSettings,
     AboutSettings? aboutSettings,
-  }) : this.userPreferences = userPreferences ?? UserPreferences(),
-       this.homeConfiguration = homeConfiguration ?? HomeConfiguration(),
-       this.deviceManagement = deviceManagement ?? DeviceManagement(),
-       this.advancedSettings = advancedSettings ?? AdvancedSettings(),
-       this.aboutSettings = aboutSettings ?? AboutSettings();
+  }) : userPreferences = userPreferences ?? UserPreferences(),
+       homeConfiguration = homeConfiguration ?? HomeConfiguration(),
+       deviceManagement = deviceManagement ?? DeviceManagement(),
+       advancedSettings = advancedSettings ?? AdvancedSettings(),
+       aboutSettings = aboutSettings ?? AboutSettings();
 
   // Create a copy with modified values
   AppSettings copyWith({
@@ -74,8 +74,8 @@ class AboutSettings {
     this.termsOfServiceUrl = 'https://digitalecohome.example.com/terms',
     this.supportEmail = 'support@digitalecohome.example.com',
     this.websiteUrl = 'https://digitalecohome.example.com',
-  }) : this.faqItems = faqItems ?? _getDefaultFAQItems(),
-       this.tutorialScreens = tutorialScreens ?? _getDefaultTutorialScreens();
+  }) : faqItems = faqItems ?? _getDefaultFAQItems(),
+       tutorialScreens = tutorialScreens ?? _getDefaultTutorialScreens();
 
   // Default FAQ items
   static List<FAQItem> _getDefaultFAQItems() {

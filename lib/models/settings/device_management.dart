@@ -7,7 +7,7 @@ class DeviceManagement {
 
   // Default constructor
   DeviceManagement({List<DeviceSettings>? deviceSettings})
-    : this.deviceSettings = deviceSettings ?? [];
+    : deviceSettings = deviceSettings ?? [];
 
   // Find device settings by device id
   DeviceSettings? findDeviceSettingsById(String deviceId) {
@@ -77,12 +77,12 @@ class DeviceSettings {
     int? autoTurnOffMinutes,
   }) {
     return DeviceSettings(
-      deviceId: this.deviceId,
+      deviceId: deviceId,
       customName: customName ?? this.customName,
-      roomId: roomId ?? this.roomId,
+      roomId: roomId ?? roomId,
       priority: priority ?? this.priority,
       autoTurnOff: autoTurnOff ?? this.autoTurnOff,
-      autoTurnOffMinutes: autoTurnOffMinutes ?? this.autoTurnOffMinutes,
+      autoTurnOffMinutes: autoTurnOffMinutes ?? autoTurnOffMinutes,
     );
   }
 }

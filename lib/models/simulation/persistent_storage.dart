@@ -1,9 +1,9 @@
 // Persistent storage for device states and energy usage history
 import 'dart:convert';
-import 'dart:io';
+// import 'dart:io'; // Unused import
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app_state.dart';
-import 'energy_usage_simulator.dart';
+// import 'energy_usage_simulator.dart'; // Unused import
 
 /// Manages persistent storage of simulated IoT data
 class IoTPersistentStorage {
@@ -45,7 +45,7 @@ class IoTPersistentStorage {
       
       return true;
     } catch (e) {
-      print('Error saving device states: $e');
+      // print('Error saving device states: $e'); // Removed print
       return false;
     }
   }
@@ -116,7 +116,7 @@ class IoTPersistentStorage {
       
       return devices;
     } catch (e) {
-      print('Error loading device states: $e');
+      // print('Error loading device states: $e'); // Removed print
       return null;
     }
   }
@@ -147,7 +147,7 @@ class IoTPersistentStorage {
       
       return true;
     } catch (e) {
-      print('Error saving energy history: $e');
+      // print('Error saving energy history: $e'); // Removed print
       return false;
     }
   }
@@ -199,7 +199,7 @@ class IoTPersistentStorage {
         'deviceUsage': deviceUsage,
       };
     } catch (e) {
-      print('Error loading energy history: $e');
+      // print('Error loading energy history: $e'); // Removed print
       return null;
     }
   }
@@ -223,7 +223,7 @@ class IoTPersistentStorage {
       
       return true;
     } catch (e) {
-      print('Error saving energy alerts: $e');
+      // print('Error saving energy alerts: $e'); // Removed print
       return false;
     }
   }
@@ -255,7 +255,7 @@ class IoTPersistentStorage {
       
       return alerts;
     } catch (e) {
-      print('Error loading energy alerts: $e');
+      // print('Error loading energy alerts: $e'); // Removed print
       return null;
     }
   }
@@ -270,7 +270,7 @@ class IoTPersistentStorage {
       
       return true;
     } catch (e) {
-      print('Error saving data to file: $e');
+      // print('Error saving data to file: $e'); // Removed print
       return false;
     }
   }
@@ -293,7 +293,7 @@ class IoTPersistentStorage {
       
       return data;
     } catch (e) {
-      print('Error loading data from file: $e');
+      // print('Error loading data from file: $e'); // Removed print
       return null;
     }
   }
@@ -312,7 +312,7 @@ class IoTPersistentStorage {
       
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     } catch (e) {
-      print('Error getting last update time: $e');
+      // print('Error getting last update time: $e'); // Removed print
       return null;
     }
   }

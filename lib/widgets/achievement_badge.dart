@@ -7,10 +7,10 @@ class AchievementBadge extends StatelessWidget {
   final bool showName;
 
   const AchievementBadge({
-    Key? key,
+    super.key,
     required this.achievement,
     this.showName = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class AchievementBadge extends StatelessWidget {
             : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400);
     final bgColor =
         achievement.earned
-            ? color.withOpacity(0.15)
+            ? color.withAlpha((0.15 * 255).round())
             : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200);
 
     Widget badgeContent = Container(

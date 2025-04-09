@@ -1,5 +1,5 @@
 name: digital_ecohome
-description: "A new Flutter project."
+description: "Digital EcoHome smart home application."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -48,6 +48,7 @@ dependencies:
   
   # HTTP requests
   http: ^1.1.0
+  package_info_plus: ^8.0.0 # Added for app version info
 
 dev_dependencies:
   flutter_test:

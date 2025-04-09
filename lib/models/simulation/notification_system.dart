@@ -1,7 +1,7 @@
 // Notification system for energy alerts and device events
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart'; // Unused import
 // Using a simpler implementation without external dependencies
 import '../app_state.dart';
 import 'energy_usage_simulator.dart';
@@ -28,7 +28,7 @@ class NotificationSystem {
   // Initialize the notification system
   Future<void> initialize() async {
     // No external plugin initialization needed in this simplified version
-    print('Notification system initialized');
+    // print('Notification system initialized'); // Removed print
   }
 
   // Start monitoring for notifications
@@ -235,13 +235,13 @@ class NotificationSystem {
     _pendingNotifications.add(notification);
 
     // Log notification for debugging
-    print('NOTIFICATION: $title - $body');
+    // print('NOTIFICATION: $title - $body'); // Removed print
   }
 
   // Clean up old notifications from the tracking set
   void _cleanupOldNotifications() {
-    final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
+    // final now = DateTime.now(); // Unused variable
+    // final yesterday = now.subtract(const Duration(days: 1)); // Unused variable
 
     // For this simulation, we'll just clear all but the most recent notifications
     // In a real app, you'd want to be more precise with timestamps

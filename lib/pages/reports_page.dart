@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart'; // Unused import
 import 'package:intl/intl.dart';
-import '../models/app_state.dart' hide EnergyAlert;
+// import '../models/app_state.dart' hide EnergyAlert; // Unused import
 import '../theme.dart';
-import '../widgets/usage_chart.dart';
+// import '../widgets/usage_chart.dart'; // Unused import
 import '../widgets/report_charts.dart';
 import '../models/reports/energy_report_model.dart';
+// Removed Demo Mode import
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -31,7 +32,7 @@ class _ReportsPageState extends State<ReportsPage>
   // Report data
   late List<EnergyReportData> _reportData;
   late Map<String, Color> _categoryColorMap;
-  int _selectedDataPointIndex = -1;
+  int _selectedDataPointIndex = -1; // Field is used, restored again
 
   // Tips and alerts
   late List<EnergySavingTip> _energySavingTips;
@@ -64,11 +65,12 @@ class _ReportsPageState extends State<ReportsPage>
 
     // Set up color map for categories
     _categoryColorMap = {
-      'HVAC': Colors.blue,
-      'Appliance': Colors.green,
-      'Light': Colors.amber,
-      'Water': Colors.red,
-      'Other': Colors.purple,
+      // Placeholder: Map these colors to theme colors if desired
+      'HVAC': Colors.blue, // Example: AppTheme.getSecondaryColor(context)
+      'Appliance': Colors.green, // Example: AppTheme.getSuccessColor(context)
+      'Light': Colors.amber, // Example: Colors.orangeAccent
+      'Water': Colors.red, // Example: AppTheme.getErrorColor(context)
+      'Other': Colors.purple, // Example: Colors.deepPurpleAccent
     };
 
     // Load tips and alerts
@@ -151,8 +153,8 @@ class _ReportsPageState extends State<ReportsPage>
                         label: const Text('Daily'),
                         selected: true,
                         onSelected: (_) {},
-                        selectedColor: AppTheme.primaryColor,
-                        labelStyle: const TextStyle(color: Colors.white),
+                        selectedColor: AppTheme.getPrimaryColor(context),
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary), // Use theme color
                       ),
                       ChoiceChip(
                         label: const Text('Weekly'),
@@ -200,10 +202,10 @@ class _ReportsPageState extends State<ReportsPage>
                     ),
                   );
                 },
-                child: const Text('Schedule'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppTheme.primaryColor,
                 ),
+                child: const Text('Schedule'),
               ),
             ],
           ),
@@ -212,7 +214,7 @@ class _ReportsPageState extends State<ReportsPage>
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    // final appState = Provider.of<AppState>(context); // Unused variable
 
     // Get current report data
     final currentReport = _reportData.isNotEmpty ? _reportData.last : null;
@@ -416,10 +418,8 @@ class _ReportsPageState extends State<ReportsPage>
                                   color:
                                       currentReport.energyUsage <
                                               previousReport.energyUsage
-                                          ? const Color(
-                                            0xFF4CAF50,
-                                          ).withOpacity(0.1)
-                                          : Colors.redAccent.withOpacity(0.1),
+                                          ? AppTheme.getSuccessColor(context).withAlpha((0.1 * 255).round()) // Use theme color
+                                          : AppTheme.getErrorColor(context).withAlpha((0.1 * 255).round()), // Use theme color
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -432,8 +432,8 @@ class _ReportsPageState extends State<ReportsPage>
                                       color:
                                           currentReport.energyUsage <
                                                   previousReport.energyUsage
-                                              ? const Color(0xFF4CAF50)
-                                              : Colors.redAccent,
+                                              ? AppTheme.getSuccessColor(context) // Use theme color
+                                              : AppTheme.getErrorColor(context), // Use theme color
                                       size: 16,
                                     ),
                                     const SizedBox(width: 4),
@@ -445,8 +445,8 @@ class _ReportsPageState extends State<ReportsPage>
                                         color:
                                             currentReport.energyUsage <
                                                     previousReport.energyUsage
-                                                ? const Color(0xFF4CAF50)
-                                                : Colors.redAccent,
+                                                ? AppTheme.getSuccessColor(context) // Use theme color
+                                                : AppTheme.getErrorColor(context), // Use theme color
                                       ),
                                     ),
                                   ],
@@ -472,13 +472,13 @@ class _ReportsPageState extends State<ReportsPage>
                               'Cost',
                               '\$${currentReport.cost.toStringAsFixed(2)}',
                               Icons.attach_money,
-                              Colors.green,
+                              AppTheme.getSuccessColor(context), // Use theme color
                             ),
                             _buildStatItem(
                               'CO₂',
                               '${currentReport.co2Emissions.toStringAsFixed(1)} kg',
                               Icons.eco,
-                              Colors.teal,
+                              AppTheme.getSecondaryColor(context), // Use theme color (e.g., secondary)
                             ),
                           ],
                         ),
@@ -493,9 +493,9 @@ class _ReportsPageState extends State<ReportsPage>
             // Tab Bar for different chart views
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration( // Removed const
                 border: Border(
-                  bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                  bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1), // Use theme divider color
                 ),
               ),
               child: TabBar(
@@ -545,7 +545,7 @@ class _ReportsPageState extends State<ReportsPage>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha((0.1 * 255).round()),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -598,73 +598,84 @@ class _ReportsPageState extends State<ReportsPage>
           };
         }).toList();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+   return SingleChildScrollView(
+     padding: const EdgeInsets.all(16.0),
+     child: Column( // Removed const
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Line Chart
-          const Text(
-            'Energy Consumption Over Time',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
+        children: () { // Convert to function returning list
+          // Build the list programmatically
+          List<Widget> widgets = [
+            // Line Chart
+            Text(
+              'Energy Consumption Over Time',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          LineChartWidget(
-            data: lineChartData,
-            xAxisLabel: _selectedTimeRange,
-            yAxisLabel: 'kWh',
-            showDots: _selectedTimeRange == 'Year',
-            showAverage: true,
-          ),
-
-          const SizedBox(height: 24),
-
-          // Comparison widget if toggle is on
-          if (_compareWithPrevious && _reportData.length >= 2)
-            EnergyComparisionWidget(
-              currentValue: _reportData.last.energyUsage,
-              previousValue: _reportData[_reportData.length - 2].energyUsage,
-              currentLabel: 'Current ${_selectedTimeRange}',
-              previousLabel: 'Previous ${_selectedTimeRange}',
+            SizedBox(height: 16),
+            LineChartWidget(
+              data: lineChartData,
+              xAxisLabel: _selectedTimeRange,
+              yAxisLabel: 'kWh',
+              showDots: _selectedTimeRange == 'Year',
+              showAverage: true,
             ),
+            SizedBox(height: 24),
 
-          const SizedBox(height: 24),
-
-          // Energy Saving Tips Section
-          const Text(
-            'Energy Saving Tips',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
+            // Energy Saving Tips Section
+            Text(
+              'Energy Saving Tips',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            SizedBox(height: 16),
+          ];
 
-          ..._energySavingTips
-              .take(3)
-              .map((tip) => _buildTipCard(tip))
-              .toList(),
+          // Add tips using addAll
+          widgets.addAll(
+            _energySavingTips
+                .take(3)
+                .map((tip) => _buildTipCard(tip))
+                .toList(),
+          );
 
-          const SizedBox(height: 24),
+          // Add SizedBox and Comparison widget
+          widgets.addAll([
+            SizedBox(height: 24),
+            (_compareWithPrevious && _reportData.length >= 2)
+                ? EnergyComparisionWidget( // Removed unnecessary Container wrapper
+                    currentValue: _reportData.last.energyUsage,
+                    previousValue: _reportData[_reportData.length - 2].energyUsage,
+                    currentLabel: 'Current $_selectedTimeRange',
+                    previousLabel: 'Previous $_selectedTimeRange',
+                  )
+                : const SizedBox.shrink(), // Ensure ternary structure is correct
+            SizedBox(height: 24),
 
-          // Unusual Activity Section
-          const Text(
-            'Unusual Activity',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
+            // Unusual Activity Section
+            Text(
+              'Unusual Activity',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            SizedBox(height: 16),
+          ]);
 
-          ..._energyAlerts.map((alert) => _buildAlertCard(alert)).toList(),
-        ],
+          // Add alerts using addAll
+          widgets.addAll(
+            _energyAlerts.map((alert) => _buildAlertCard(alert)).toList(),
+          );
+
+          return widgets; // Return the final list
+        }(), // Immediately invoke the function
       ),
     );
   }
@@ -734,7 +745,7 @@ class _ReportsPageState extends State<ReportsPage>
           const SizedBox(height: 16),
 
           // List of categories with details
-          ...categoryTotals.entries.map((entry) {
+          ...categoryTotals.entries.map((entry) { // Added spread operator
             // Group devices by category
             final devicesInCategory =
                 _deviceEnergyList
@@ -744,10 +755,10 @@ class _ReportsPageState extends State<ReportsPage>
             return _buildCategoryCard(
               entry.key,
               entry.value / _reportData.length,
-              _categoryColorMap[entry.key] ?? Colors.grey,
+              _categoryColorMap[entry.key] ?? Theme.of(context).disabledColor, // Use theme color
               devicesInCategory,
             );
-          }).toList(),
+          }).toList(), // Re-added .toList()
         ],
       ),
     );
@@ -801,6 +812,7 @@ class _ReportsPageState extends State<ReportsPage>
           const SizedBox(height: 16),
 
           // Top 3 devices
+          // Correctly spread the mapped list
           ...topDevices
               .take(3)
               .map(
@@ -816,7 +828,7 @@ class _ReportsPageState extends State<ReportsPage>
                   color: device.color,
                 ),
               )
-              .toList(),
+              .toList(), // .toList() is necessary when spreading .map() result
 
           const SizedBox(height: 24),
 
@@ -835,7 +847,7 @@ class _ReportsPageState extends State<ReportsPage>
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Use theme color
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -887,6 +899,7 @@ class _ReportsPageState extends State<ReportsPage>
           ),
 
           // Table rows
+          // Correctly spread the mapped list
           ...topDevices
               .map(
                 (device) => Container(
@@ -896,7 +909,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade200),
+                      bottom: BorderSide(color: Theme.of(context).dividerColor),
                     ),
                   ),
                   child: Row(
@@ -945,7 +958,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                 ),
               )
-              .toList(),
+              .toList(), // .toList() is necessary when spreading .map() result
 
           const SizedBox(height: 16),
 
@@ -954,22 +967,22 @@ class _ReportsPageState extends State<ReportsPage>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            color: Colors.blue.shade50,
+            color: AppTheme.getSecondaryColor(context).withAlpha((0.1 * 255).round()), // Use theme color (e.g., secondary accent)
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row( // Removed const
                     children: [
-                      Icon(Icons.savings, color: Colors.blue),
+                      Icon(Icons.savings, color: AppTheme.getSecondaryColor(context)), // Use theme color
                       SizedBox(width: 8),
                       Text(
                         'Potential Savings',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: AppTheme.getSecondaryColor(context), // Use theme color
                         ),
                       ),
                     ],
@@ -982,10 +995,10 @@ class _ReportsPageState extends State<ReportsPage>
                   const SizedBox(height: 8),
                   Text(
                     'Up to \$${_energySavingTips.fold(0.0, (sum, tip) => sum + tip.potentialSavings).toStringAsFixed(2)} per month',
-                    style: const TextStyle(
+                    style: TextStyle( // Removed const
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: AppTheme.getSecondaryColor(context), // Use theme color
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1014,10 +1027,10 @@ class _ReportsPageState extends State<ReportsPage>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: AppTheme.getSuccessColor(context).withAlpha((0.1 * 255).round()), // Use theme color
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(tip.icon, color: Colors.green, size: 24),
+              child: Icon(tip.icon, color: AppTheme.getSuccessColor(context), size: 24), // Use theme color
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -1043,9 +1056,9 @@ class _ReportsPageState extends State<ReportsPage>
                   const SizedBox(height: 8),
                   Text(
                     'Potential Savings: \$${tip.potentialSavings.toStringAsFixed(2)}/month',
-                    style: const TextStyle(
+                    style: TextStyle( // Removed const
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: AppTheme.getSuccessColor(context), // Use theme color
                     ),
                   ),
                 ],
@@ -1071,13 +1084,13 @@ class _ReportsPageState extends State<ReportsPage>
               decoration: BoxDecoration(
                 color:
                     alert.isImportant
-                        ? Colors.red.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
+                        ? AppTheme.getErrorColor(context).withAlpha((0.1 * 255).round()) // Use theme color
+                        : AppTheme.getSecondaryColor(context).withAlpha((0.1 * 255).round()), // Use theme color (e.g., secondary accent)
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 alert.icon,
-                color: alert.isImportant ? Colors.red : Colors.orange,
+                color: alert.isImportant ? AppTheme.getErrorColor(context) : AppTheme.getSecondaryColor(context), // Use theme colors
                 size: 24,
               ),
             ),
@@ -1104,7 +1117,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${_formatTimeAgo(alert.time)}',
+                    _formatTimeAgo(alert.time), // Unnecessary string interpolation removed
                     style: const TextStyle(
                       color: AppTheme.textSecondaryColor,
                       fontSize: 12,

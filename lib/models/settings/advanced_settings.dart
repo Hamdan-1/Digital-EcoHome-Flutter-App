@@ -20,11 +20,11 @@ class AdvancedSettings {
     ScanFrequency? scanFrequency,
     DataStoragePreferences? dataStoragePreferences,
     HardwareConnectionSettings? hardwareConnectionSettings,
-  }) : this.networkSettings = networkSettings ?? NetworkSettings(),
-       this.scanFrequency = scanFrequency ?? ScanFrequency(),
-       this.dataStoragePreferences =
+  }) : networkSettings = networkSettings ?? NetworkSettings(),
+       scanFrequency = scanFrequency ?? ScanFrequency(),
+       dataStoragePreferences =
            dataStoragePreferences ?? DataStoragePreferences(),
-       this.hardwareConnectionSettings =
+       hardwareConnectionSettings =
            hardwareConnectionSettings ?? HardwareConnectionSettings();
 
   // Create a copy with modified values
@@ -167,7 +167,7 @@ class HardwareConnectionSettings {
     this.apiKey = '',
     this.apiSecret = '',
     List<String>? connectedHardwareIds,
-  }) : this.connectedHardwareIds = connectedHardwareIds ?? [];
+  }) : connectedHardwareIds = connectedHardwareIds ?? [];
 
   // Available controller types
   static List<String> get controllerTypes => [

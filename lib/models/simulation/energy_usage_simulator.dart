@@ -3,19 +3,19 @@ import 'dart:math';
 import 'dart:async';
 import '../app_state.dart';
 import 'simulation_config.dart';
-import 'device_behavior.dart';
+// import 'device_behavior.dart'; // Unused import
 
 class EnergyUsageSimulator {
   final SimulationConfig config;
   final Random random;
   
   // Historical usage data
-  Map<DateTime, double> _dailyUsageData = {};
-  Map<DateTime, Map<String, double>> _deviceDailyUsage = {};
+  final Map<DateTime, double> _dailyUsageData = {};
+  final Map<DateTime, Map<String, double>> _deviceDailyUsage = {};
   
   // Current day usage 
   double _currentDayUsage = 0.0;
-  Map<String, double> _currentDeviceDayUsage = {};
+  final Map<String, double> _currentDeviceDayUsage = {};
   
   // Hourly usage tracking
   List<double> _hourlyUsage = List.filled(24, 0.0);
@@ -263,15 +263,15 @@ class EnergyUsageSimulator {
       final currentHour = now.hour;
       
       // Get average for this hour over past week
-      double hourlyAvg = 0.0;
-      int hourCount = 0;
+      // double hourlyAvg = 0.0; // Unused variable
+      // int hourCount = 0; // Unused variable
       
       // For simplicity, we'll assume hourly data is available in the simulation
       if (_hourlyUsage[currentHour] > 3.0) {
         anomalies.add(
           EnergyAnomaly(
             type: AnomalyType.spike,
-            description: 'Unusual energy spike detected at ${currentHour}:00.',
+            description: 'Unusual energy spike detected at $currentHour:00.',
             severity: AnomalySeverity.high,
             timestamp: now,
           )

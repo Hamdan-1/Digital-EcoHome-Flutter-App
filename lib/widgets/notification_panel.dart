@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../utils/animations.dart'; // Import AnimatedTapButton
 import '../services/notification_service.dart';
 
 class NotificationPanel extends StatelessWidget {
-  const NotificationPanel({Key? key}) : super(key: key);
+  const NotificationPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +21,7 @@ class NotificationPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withAlpha((0.1 * 255).round()),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -59,7 +60,7 @@ class NotificationPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
@@ -75,9 +76,18 @@ class NotificationPanel extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           if (service.notifications.isNotEmpty)
-            TextButton(
-              onPressed: () => service.clearNotifications(),
-              child: const Text('Clear All'),
+            // Wrap TextButton with AnimatedTapButton
+            AnimatedTapButton(
+              onTap: () => service.clearNotifications(),
+              child: TextButton(
+                onPressed: null, // Handled by AnimatedTapButton
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero, // Remove default padding if needed
+                  minimumSize: Size.zero, // Remove default minimum size if needed
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Adjust tap area
+                ),
+                child: const Text('Clear All'),
+              ),
             ),
         ],
       ),
@@ -95,7 +105,7 @@ class NotificationPanel extends StatelessWidget {
             size: 48,
             color: Theme.of(
               context,
-            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ).colorScheme.onSurfaceVariant.withAlpha((0.5 * 255).round()),
           ),
           const SizedBox(height: 16),
           Text(
@@ -103,7 +113,7 @@ class NotificationPanel extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(
                 context,
-              ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ).colorScheme.onSurfaceVariant.withAlpha((0.7 * 255).round()),
             ),
           ),
           const SizedBox(height: 8),
@@ -113,7 +123,7 @@ class NotificationPanel extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(
                 context,
-              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+              ).colorScheme.onSurfaceVariant.withAlpha((0.5 * 255).round()),
             ),
           ),
         ],
@@ -144,7 +154,7 @@ class NotificationPanel extends StatelessWidget {
           backgroundColor: _getPriorityColor(
             context,
             notification.priority,
-          ).withOpacity(0.2),
+          ).withAlpha((0.2 * 255).round()),
           child: Icon(
             notification.icon ?? Icons.notifications,
             color: _getPriorityColor(context, notification.priority),
@@ -168,7 +178,7 @@ class NotificationPanel extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ).colorScheme.onSurfaceVariant.withAlpha((0.7 * 255).round()),
               ),
             ),
           ],
@@ -179,7 +189,7 @@ class NotificationPanel extends StatelessWidget {
         tileColor:
             notification.isRead
                 ? null
-                : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.3 * 255).round()),
       ),
     );
   }

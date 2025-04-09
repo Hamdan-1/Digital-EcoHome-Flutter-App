@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math' as math;
+// import 'dart:math' as math; // Unused import
 import '../../models/app_state.dart';
+import '../../models/data_status.dart'; // Import DataStatus
 import '../../theme.dart';
+import '../../widgets/optimized_loading_indicator.dart';
+import '../../utils/error_handler.dart'; // Import ErrorHandler
 
 class LightControlPage extends StatefulWidget {
   final String deviceId;
@@ -27,42 +30,42 @@ class _LightControlPageState extends State<LightControlPage> {
       'icon': Icons.lightbulb_outline,
       'brightness': 80,
       'colorTemp': 4000,
-      'color': Colors.white,
+      'color': Colors.white, // TODO: Map to theme color if needed
     },
     {
       'name': 'Reading',
       'icon': Icons.book,
       'brightness': 100,
       'colorTemp': 5000,
-      'color': Colors.white,
+      'color': Colors.white, // TODO: Map to theme color if needed
     },
     {
       'name': 'Relaxing',
       'icon': Icons.spa,
       'brightness': 40,
       'colorTemp': 2700,
-      'color': const Color(0xFFFFF4E5),
+      'color': const Color(0xFFFFF4E5), // TODO: Map to theme color (Warm White)
     },
     {
       'name': 'Movie',
       'icon': Icons.movie,
       'brightness': 20,
       'colorTemp': 3000,
-      'color': const Color(0xFFFFE0C0),
+      'color': const Color(0xFFFFE0C0), // TODO: Map to theme color (Dim Warm)
     },
     {
       'name': 'Party',
       'icon': Icons.celebration,
       'brightness': 85,
       'colorTemp': 4500,
-      'color': Colors.deepPurpleAccent,
+      'color': Colors.deepPurpleAccent, // TODO: Map to theme color (e.g., secondary variant)
     },
     {
       'name': 'Focus',
       'icon': Icons.psychology,
       'brightness': 90,
       'colorTemp': 5500,
-      'color': const Color(0xFFE0F4FF),
+      'color': const Color(0xFFE0F4FF), // TODO: Map to theme color (Cool White)
     },
   ];
 
@@ -76,18 +79,33 @@ class _LightControlPageState extends State<LightControlPage> {
   }
 
   void _loadDeviceSettings() {
+    // Add mounted check
+    if (!mounted) return;
+
     final appState = Provider.of<AppState>(context, listen: false);
-    final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
+    // Only try loading settings if the device list is successfully loaded
+    if (appState.devicesStatus == DataStatus.success) {
+      try {
+        final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
 
-    if (device is SmartLight && device.settings != null) {
-      setState(() {
-        _brightness = device.settings!['brightness'] as int;
-        _colorTemperature = device.settings!['colorTemperature'] as int;
-        _selectedScene = device.settings!['scene'] as String;
-
-        final colorValue = device.settings!['color'] as int;
-        _selectedColor = Color(colorValue);
-      });
+        if (device is SmartLight && device.settings != null) {
+          // Check mounted again before setState
+          if (!mounted) return;
+          setState(() {
+            _brightness = device.settings!['brightness'] as int;
+            _colorTemperature = device.settings!['colorTemperature'] as int;
+            _selectedScene = device.settings!['scene'] as String;
+            final colorValue = device.settings!['color'] as int;
+            _selectedColor = Color(colorValue);
+            _settingsChanged = false; // Reset changed flag after loading
+          });
+        }
+      } catch (e) {
+        // Handle case where device might not be found even if list is loaded
+        debugPrint("Error loading device settings for ${widget.deviceId}: $e");
+        // Optionally show a snackbar or set an error state if needed,
+        // but the build method will handle the primary "not found" case.
+      }
     }
   }
 
@@ -114,7 +132,7 @@ class _LightControlPageState extends State<LightControlPage> {
       'brightness': _brightness,
       'colorTemperature': _colorTemperature,
       'scene': _selectedScene,
-      'color': _selectedColor.value,
+      'color': _selectedColor.toARGB32(), // Use toARGB32() instead of deprecated .value
     });
 
     setState(() {
@@ -132,7 +150,7 @@ class _LightControlPageState extends State<LightControlPage> {
               ? 'Settings updated successfully'
               : 'Failed to update settings. Please try again.',
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor: success ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
         duration: const Duration(seconds: 2),
       ),
     );
@@ -141,147 +159,156 @@ class _LightControlPageState extends State<LightControlPage> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+
+    // Handle overall device list loading/error states first
+    switch (appState.devicesStatus) {
+      case DataStatus.initial:
+      case DataStatus.loading:
+        return Scaffold(
+          appBar: AppBar(title: const Text('Loading Device...')),
+          body: const Center(child: OptimizedLoadingIndicator()),
+        );
+      case DataStatus.error:
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(
+            child: ErrorHandler.buildErrorDisplay(
+              context: context,
+              message: appState.devicesError ?? 'Failed to load devices.',
+              // Optionally add retry for the device list itself if AppState supports it
+            ),
+          ),
+        );
+      case DataStatus.empty:
+      case DataStatus.success:
+        // Try to find the specific device
+        try {
+          final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
+          // If found, build the controls UI
+          return _buildDeviceControls(context, appState, device);
+        } catch (e) {
+          // Device not found in the list
+          return Scaffold(
+            appBar: AppBar(title: const Text('Device Not Found')),
+            body: Center(
+              child: ErrorHandler.buildErrorDisplay(
+                context: context,
+                message: 'Device with ID ${widget.deviceId} could not be found.',
+                // Remove onRetry for "Device Not Found" - user should use back button.
+                // onRetry: () => Navigator.of(context).pop(),
+              ),
+            ),
+          );
+        }
+    }
+  }
+
+  // Extracted method to build the main UI when the device is found
+  Widget _buildDeviceControls(BuildContext context, AppState appState, Device device) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final device = appState.devices.firstWhere(
-      (d) => d.id == widget.deviceId,
-      orElse:
-          () => Device(
-            id: '',
-            name: 'Unknown Device',
-            type: 'Light',
-            isActive: false,
-            currentUsage: 0,
-            iconPath: 'lightbulb',
-            maxUsage: 0,
-          ),
-    );
-
-    if (device.id.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Device Not Found')),
-        body: const Center(child: Text('The device could not be found.')),
-      );
-    }
-
-    // Calculate background color based on color temperature and selected color
-    Color bgColor;
-    if (_selectedScene == 'Normal' ||
-        _selectedScene == 'Reading' ||
-        _selectedScene == 'Focus') {
-      // Use color temperature for white light modes
-      double factor = (_colorTemperature - 2700) / (6500 - 2700);
-      factor = factor.clamp(0.0, 1.0);
-
-      // Warm (2700K) to cool (6500K)
-      if (isDarkMode) {
-        // Darker versions for dark mode
-        bgColor =
-            Color.lerp(
-              const Color(0xFF3A2E1D), // Dark warm
-              const Color(0xFF1D2A3A), // Dark cool
-              factor,
-            )!;
-      } else {
-        bgColor =
-            Color.lerp(
-              const Color(0xFFFFF4E5), // Warm
-              const Color(0xFFE8F3FF), // Cool
-              factor,
-            )!;
-      }
-    } else {
-      // Use selected color for colored scenes but make it very light/dark
-      if (isDarkMode) {
-        // Darker version for dark mode, keep some color tint
-        bgColor = Color.alphaBlend(
-          _selectedColor.withOpacity(0.15),
-          AppTheme.darkBackgroundColor,
-        );
-      } else {
-        bgColor = Color.alphaBlend(
-          _selectedColor.withOpacity(0.1),
-          Colors.white,
-        );
-      }
-    }
+    // Calculate background color based on current state
+    Color bgColor = _calculateBackgroundColor(isDarkMode);
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         title: Text(device.name),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // Keep transparent
         elevation: 0,
-        foregroundColor: isDarkMode ? Colors.white : Colors.black,
+        foregroundColor: AppTheme.getTextPrimaryColor(context), // Use theme text color
         actions: [
-          if (_settingsChanged)
+          if (_settingsChanged && !_isUpdating) // Show save only if changed and not updating
             IconButton(
               icon: const Icon(Icons.save),
-              onPressed: _isUpdating ? null : () => _saveSettings(appState),
+              tooltip: 'Save Settings',
+              onPressed: () => _saveSettings(appState),
             ),
+          if (_isUpdating) // Show loading indicator in AppBar while updating
+             Padding(
+               padding: const EdgeInsets.only(right: 16.0),
+               child: Center(child: OptimizedLoadingIndicator(size: 20, color: AppTheme.getTextPrimaryColor(context))), // Use theme text color
+             ),
         ],
       ),
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // Light visualization
-              _buildLightVisualization(device, context),
-
-              const SizedBox(height: 24),
-
-              // Brightness control
-              _buildBrightnessControl(device),
-
-              const SizedBox(height: 24),
-
-              // Color temperature slider
-              _buildColorTemperatureControl(),
-
-              const SizedBox(height: 24),
-
-              // Scene selection
-              _buildSceneSelection(),
-
-              const SizedBox(height: 24),
-
-              // Group control placeholder
-              _buildGroupControl(),
-
-              const SizedBox(height: 24),
-
-              // Schedule settings placeholder
-              _buildScheduleSection(),
-
-              const SizedBox(height: 80), // Bottom padding for FAB
-            ],
-          ),
-
-          if (_isUpdating)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-        ],
+      body: RefreshIndicator( // Allow pull-to-refresh for device state
+        onRefresh: () async {
+           // Trigger a state refresh, AppState simulation might update automatically
+           // or we might need a specific refresh method in AppState later.
+           if (mounted) setState(() {});
+        },
+        child: ListView( // Keep ListView for scrollability
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            // Light visualization
+            _buildLightVisualization(device, context),
+            const SizedBox(height: 24),
+            // Brightness control
+            _buildBrightnessControl(device),
+            const SizedBox(height: 24),
+            // Color temperature slider
+            _buildColorTemperatureControl(),
+            const SizedBox(height: 24),
+            // Scene selection
+            _buildSceneSelection(),
+            const SizedBox(height: 24),
+            // Group control placeholder
+            _buildGroupControl(),
+            const SizedBox(height: 24),
+            // Schedule settings placeholder
+            _buildScheduleSection(),
+            const SizedBox(height: 80), // Bottom padding for FAB
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          appState.toggleDevice(widget.deviceId);
+          // Prevent toggling while settings are being updated
+          if (!_isUpdating) {
+             appState.toggleDevice(widget.deviceId);
+          }
         },
-        backgroundColor: device.isActive ? Colors.red : AppTheme.primaryColor,
-        child: Icon(device.isActive ? Icons.power_settings_new : Icons.power),
+        backgroundColor: device.isActive ? AppTheme.getErrorColor(context) : AppTheme.getPrimaryColor(context), // Use theme colors
+        tooltip: device.isActive ? 'Turn Off' : 'Turn On',
+        child: Icon(device.isActive ? Icons.power_settings_new : Icons.power, color: Theme.of(context).colorScheme.onPrimary), // Ensure icon contrast
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
+  // Helper to calculate background color based on current settings
+
+  Color _calculateBackgroundColor(bool isDarkMode) {
+     Color bgColor;
+     if (_selectedScene == 'Normal' ||
+         _selectedScene == 'Reading' ||
+         _selectedScene == 'Focus') {
+       // Use color temperature for white light modes
+       double factor = (_colorTemperature - 2700) / (6500 - 2700);
+       factor = factor.clamp(0.0, 1.0);
+
+       if (isDarkMode) {
+         bgColor = Color.lerp(const Color(0xFF3A2E1D), const Color(0xFF1D2A3A), factor)!;
+       } else {
+         bgColor = Color.lerp(const Color(0xFFFFF4E5), const Color(0xFFE8F3FF), factor)!;
+       }
+     } else {
+       // Use selected color for colored scenes but make it very light/dark
+       if (isDarkMode) {
+         bgColor = Color.alphaBlend(_selectedColor.withAlpha((0.15 * 255).round()), AppTheme.darkBackgroundColor);
+       } else {
+         bgColor = Color.alphaBlend(_selectedColor.withAlpha((0.1 * 255).round()), Theme.of(context).colorScheme.surface); // Use theme surface
+       }
+     }
+     return bgColor;
+  }
+
   Widget _buildLightVisualization(Device device, BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark; // Unused variable
     final bulbColor =
         device.isActive
             ? _getLightColor()
-            : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+            : Theme.of(context).disabledColor.withAlpha((0.3 * 255).round()); // Use theme color
     final glowOpacity = device.isActive ? (_brightness / 100) * 0.8 : 0.0;
 
     return Center(
@@ -297,7 +324,7 @@ class _LightControlPageState extends State<LightControlPage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: bulbColor.withOpacity(glowOpacity),
+                    color: bulbColor.withAlpha((glowOpacity * 255).round()),
                     blurRadius: 40,
                     spreadRadius: 10,
                   ),
@@ -316,7 +343,7 @@ class _LightControlPageState extends State<LightControlPage> {
                   device.isActive
                       ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Theme.of(context).shadowColor.withAlpha((0.1 * 255).round()), // Use theme shadow
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -329,10 +356,8 @@ class _LightControlPageState extends State<LightControlPage> {
                 size: 60,
                 color:
                     device.isActive
-                        ? Colors.white.withOpacity(0.9)
-                        : (isDarkMode
-                            ? Colors.grey.shade600
-                            : Colors.grey.shade400),
+                        ? Theme.of(context).colorScheme.onPrimary.withAlpha((0.9 * 255).round()) // Use theme color
+                        : Theme.of(context).disabledColor, // Use theme color
               ),
             ),
           ),
@@ -380,8 +405,8 @@ class _LightControlPageState extends State<LightControlPage> {
       elevation: 0,
       color:
           isDarkMode
-              ? AppTheme.darkCardColor.withOpacity(0.8)
-              : Colors.white.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.8 * 255).round()) // Use theme color
+              : Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()), // Use theme color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -412,10 +437,10 @@ class _LightControlPageState extends State<LightControlPage> {
                     activeColor:
                         device.isActive
                             ? AppTheme.getPrimaryColor(context)
-                            : Colors.grey,
+                            : Theme.of(context).disabledColor, // Use theme color
                     inactiveColor: AppTheme.getPrimaryColor(
                       context,
-                    ).withOpacity(0.2),
+                    ).withAlpha((0.2 * 255).round()), // Keep primary accent for inactive track
                     onChanged:
                         !device.isActive
                             ? null
@@ -472,8 +497,8 @@ class _LightControlPageState extends State<LightControlPage> {
       elevation: 0,
       color:
           isDarkMode
-              ? AppTheme.darkCardColor.withOpacity(0.8)
-              : Colors.white.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.8 * 255).round()) // Use theme color
+              : Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()), // Use theme color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -496,13 +521,10 @@ class _LightControlPageState extends State<LightControlPage> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD28F),
+                    color: const Color(0xFFFFD28F), // Keep specific color for warm end
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color:
-                          isDarkMode
-                              ? Colors.grey.shade700
-                              : Colors.grey.shade300,
+                      color: Theme.of(context).dividerColor, // Use theme divider color
                     ),
                   ),
                 ),
@@ -534,13 +556,10 @@ class _LightControlPageState extends State<LightControlPage> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD6ECFF),
+                    color: const Color(0xFFD6ECFF), // Keep specific color for cool end
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color:
-                          isDarkMode
-                              ? Colors.grey.shade700
-                              : Colors.grey.shade300,
+                      color: Theme.of(context).dividerColor, // Use theme divider color
                     ),
                   ),
                 ),
@@ -587,8 +606,8 @@ class _LightControlPageState extends State<LightControlPage> {
       elevation: 0,
       color:
           isDarkMode
-              ? AppTheme.darkCardColor.withOpacity(0.8)
-              : Colors.white.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.8 * 255).round()) // Use theme color
+              : Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()), // Use theme color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -628,16 +647,14 @@ class _LightControlPageState extends State<LightControlPage> {
                           isSelected
                               ? AppTheme.getPrimaryColor(
                                 context,
-                              ).withOpacity(0.1)
-                              : (isDarkMode
-                                  ? Colors.grey.shade800.withOpacity(0.3)
-                                  : Colors.grey.withOpacity(0.05)),
+                              ).withAlpha((0.1 * 255).round())
+                              : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.3 * 255).round()), // Use theme color
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color:
                             isSelected
                                 ? AppTheme.getPrimaryColor(context)
-                                : Colors.transparent,
+                                : Colors.transparent, // Keep transparent for non-selected border
                         width: 2,
                       ),
                     ),
@@ -650,19 +667,15 @@ class _LightControlPageState extends State<LightControlPage> {
                             color:
                                 isSelected
                                     ? AppTheme.getPrimaryColor(context)
-                                    : (isDarkMode
-                                        ? Colors.grey.shade700
-                                        : Colors.grey.shade200),
+                                    : Theme.of(context).colorScheme.surfaceContainerHighest, // Use theme color
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             scene['icon'] as IconData,
                             color:
                                 isSelected
-                                    ? Colors.white
-                                    : (isDarkMode
-                                        ? Colors.white70
-                                        : AppTheme.textSecondaryColor),
+                                    ? Theme.of(context).colorScheme.onPrimary // Use theme color
+                                    : AppTheme.getTextSecondaryColor(context),
                             size: 24,
                           ),
                         ),
@@ -699,8 +712,8 @@ class _LightControlPageState extends State<LightControlPage> {
       elevation: 0,
       color:
           isDarkMode
-              ? AppTheme.darkCardColor.withOpacity(0.8)
-              : Colors.white.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.8 * 255).round()) // Use theme color
+              : Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()), // Use theme color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -724,7 +737,7 @@ class _LightControlPageState extends State<LightControlPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withOpacity(0.1),
+                    color: AppTheme.secondaryColor.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -796,8 +809,8 @@ class _LightControlPageState extends State<LightControlPage> {
       elevation: 0,
       color:
           isDarkMode
-              ? AppTheme.darkCardColor.withOpacity(0.8)
-              : Colors.white.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.8 * 255).round()) // Use theme color
+              : Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()), // Use theme color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -821,7 +834,7 @@ class _LightControlPageState extends State<LightControlPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withOpacity(0.1),
+                    color: AppTheme.secondaryColor.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -849,8 +862,7 @@ class _LightControlPageState extends State<LightControlPage> {
               label: Text('Add Schedule'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: AppTheme.getPrimaryColor(context),
-                backgroundColor:
-                    isDarkMode ? Colors.grey.shade800 : Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface, // Use theme surface color
                 side: BorderSide(color: AppTheme.getPrimaryColor(context)),
               ),
             ),

@@ -140,7 +140,7 @@ class SimulationConfig {
       notificationCheckIntervalMinutes: notificationCheckIntervalMinutes ?? this.notificationCheckIntervalMinutes,
       peakHourMultipliers: peakHourMultipliers ?? this.peakHourMultipliers,
       deviceTypePeakHourEffects: deviceTypePeakHourEffects ?? this.deviceTypePeakHourEffects,
-      random: this.random,
+      random: random,
     );
   }
 }

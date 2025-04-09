@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/animations.dart'; // Import AnimatedTapButton
 
 /// A widget that shows a tooltip pointing to a specific UI element
 class TargetedTooltip extends StatelessWidget {
@@ -24,7 +25,7 @@ class TargetedTooltip extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const TargetedTooltip({
-    Key? key,
+    super.key,
     required this.targetKey,
     required this.message,
     this.icon,
@@ -32,7 +33,7 @@ class TargetedTooltip extends StatelessWidget {
     this.textColor = Colors.white,
     this.preferredPosition,
     this.onDismiss,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +47,9 @@ class TargetedTooltip extends StatelessWidget {
           // Semi-transparent overlay to dim the background
           GestureDetector(
             onTap: onDismiss,
-            child: Container(color: Colors.black.withOpacity(0.5)),
+            child: Container(
+              color: Colors.black.withAlpha((0.5 * 255).round()),
+            ),
           ),
 
           // The actual tooltip (positioned in overlay)
@@ -136,7 +139,7 @@ class TargetedTooltip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withAlpha((0.3 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -154,11 +157,28 @@ class TargetedTooltip extends StatelessWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: onDismiss,
-              child: Text(
-                'GOT IT',
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+            // Wrap TextButton with AnimatedTapButton
+            child: AnimatedTapButton(
+              onTap:
+                  onDismiss ??
+                  () {}, // Provide empty function if onDismiss is null
+              child: TextButton(
+                // onTap is handled by AnimatedTapButton, so set onPressed to null or empty
+                onPressed: null,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero, // Remove default padding if needed
+                  minimumSize:
+                      Size.zero, // Remove default minimum size if needed
+                  tapTargetSize:
+                      MaterialTapTargetSize.shrinkWrap, // Adjust tap area
+                ),
+                child: Text(
+                  'GOT IT',
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),

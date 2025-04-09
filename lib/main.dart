@@ -13,6 +13,8 @@ import 'pages/sustainability_score_page.dart';
 import 'providers/theme_provider.dart';
 import 'services/ai_service.dart';
 import 'services/notification_service.dart';
+import 'widgets/optimized_loading_indicator.dart';
+// Demo Mode imports removed
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +38,7 @@ void main() {
           create: (context) => AiService(apiKey: openRouterApiKey),
         ),
         ChangeNotifierProvider(create: (context) => InAppNotificationService()),
+        // Demo Mode Providers Removed
       ],
       child: const MyApp(),
     ),
@@ -55,8 +58,10 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     // Initialize theme from saved preferences
     Future.microtask(
-      () =>
-          Provider.of<ThemeProvider>(context, listen: false).initializeTheme(),
+      () {
+        if (!context.mounted) return;
+        Provider.of<ThemeProvider>(context, listen: false).initializeTheme();
+      },
     );
   }
 
@@ -68,7 +73,52 @@ class _MyAppState extends State<MyApp> {
           title: 'Digital EcoHome',
           debugShowCheckedModeBanner: false,
           theme: themeProvider.currentTheme,
-          home: const SplashScreen(),
+          home:
+              const SplashScreen(), // Initial screen - Stack and Demo Guide removed
+          // Add custom page transitions to the entire app
+          onGenerateRoute: (settings) {
+            if (settings.name == '/') {
+              return null; // Let MaterialApp handle the initial route
+            }
+
+            // Extract the page from settings.arguments if available
+            Widget page;
+            if (settings.arguments is Widget) {
+              page = settings.arguments as Widget;
+            } else {
+              // Default fallback page - this should rarely happen
+              // Replace CircularProgressIndicator with OptimizedLoadingIndicator
+              page = const Scaffold(
+                body: Center(child: OptimizedLoadingIndicator()),
+              );
+            }
+
+            return PageRouteBuilder(
+              settings: settings,
+              pageBuilder: (context, animation, secondaryAnimation) => page,
+              transitionDuration: const Duration(milliseconds: 300),
+              transitionsBuilder: (
+                context,
+                animation,
+                secondaryAnimation,
+                child,
+              ) {
+                const begin = Offset(0.0, 0.05);
+                const end = Offset.zero;
+                const curve = Curves.easeOutCubic;
+
+                var tween = Tween(
+                  begin: begin,
+                  end: end,
+                ).chain(CurveTween(curve: curve));
+
+                return SlideTransition(
+                  position: animation.drive(tween),
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -84,7 +134,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation>
     with SingleTickerProviderStateMixin {
-  int _currentIndex = 0;
+  // int _currentIndex = 0; // Removed - State is now managed by AppState
   late AnimationController _animationController;
   final List<Widget> _pages = [
     const DashboardPage(),
@@ -111,12 +161,15 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   void _onTabTapped(int index) {
-    if (_currentIndex == index) return;
+    // Get AppState instance (can't use Provider.of here directly in initState/dispose, but okay in methods)
+    final appState = Provider.of<AppState>(context, listen: false);
 
-    setState(() {
-      _currentIndex = index;
-    });
+    if (appState.currentNavigationIndex == index) return;
 
+    // Call AppState method to update the index
+    appState.navigateToPageIndex(index, _pages.length);
+
+    // Play animation for visual feedback
     // Play animation for visual feedback
     _animationController.reset();
     _animationController.forward();
@@ -124,17 +177,21 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    // Listen to AppState for navigation index changes
+    final appState = Provider.of<AppState>(context);
+    final currentIndex =
+        appState.currentNavigationIndex; // Get index from AppState
+
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
-    final theme = Theme.of(context);
 
-    final primaryColor =
-        isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
+    // final primaryColor = isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor; // Keep reference for L273/274
+    final primaryColorRef = isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor; // Use a different name to avoid conflict if primaryColor is reintroduced later
     final backgroundColor = isDarkMode ? AppTheme.darkCardColor : Colors.white;
     final shadowColor =
         isDarkMode
-            ? Colors.black.withOpacity(0.4)
-            : Colors.black.withOpacity(0.1);
+            ? Colors.black.withAlpha(102) // 0.4 * 255
+            : Colors.black.withAlpha(26); // 0.1 * 255
 
     return Scaffold(
       body: AnimatedSwitcher(
@@ -154,8 +211,8 @@ class _MainNavigationState extends State<MainNavigation>
           );
         },
         child: KeyedSubtree(
-          key: ValueKey<int>(_currentIndex),
-          child: _pages[_currentIndex],
+          key: ValueKey<int>(currentIndex), // Use index from AppState
+          child: _pages[currentIndex], // Use index from AppState
         ),
       ),
       bottomNavigationBar: Container(
@@ -183,12 +240,12 @@ class _MainNavigationState extends State<MainNavigation>
                 children: [
                   // Add some padding around the items if needed
                   const SizedBox(width: 8), // Leading padding
-                  _buildNavItem(0, 'Home', Icons.home),
-                  _buildNavItem(1, 'Devices', Icons.devices),
-                  _buildNavItem(2, 'Chat', Icons.chat_bubble_outline),
-                  _buildNavItem(3, 'Reports', Icons.insert_chart),
-                  _buildNavItem(4, 'Settings', Icons.settings),
-                  _buildNavItem(5, 'Score', Icons.eco),
+                  _buildNavItem(0, 'Home', Icons.home, primaryColorRef),
+                  _buildNavItem(1, 'Devices', Icons.devices, primaryColorRef),
+                  _buildNavItem(2, 'Chat', Icons.chat_bubble_outline, primaryColorRef),
+                  _buildNavItem(3, 'Reports', Icons.insert_chart, primaryColorRef),
+                  _buildNavItem(4, 'Settings', Icons.settings, primaryColorRef),
+                  _buildNavItem(5, 'Score', Icons.eco, primaryColorRef),
                   const SizedBox(width: 8), // Trailing padding
                 ],
               ),
@@ -199,20 +256,22 @@ class _MainNavigationState extends State<MainNavigation>
     );
   }
 
-  Widget _buildNavItem(int index, String label, IconData icon) {
-    final isSelected = _currentIndex == index;
+  Widget _buildNavItem(int index, String label, IconData icon, Color selectedBaseColor) {
+    // Read current index from AppState to determine selection
+    final currentIndex =
+        Provider.of<AppState>(context, listen: false).currentNavigationIndex;
+    final isSelected = currentIndex == index;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final primaryColor =
-        isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
+    // Removed local primaryColor definition, using selectedBaseColor parameter now
     final unselectedColor =
         isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400;
     final textColor =
         isDarkMode ? AppTheme.darkTextPrimaryColor : AppTheme.textPrimaryColor;
     final selectedBgColor =
         isDarkMode
-            ? primaryColor.withOpacity(0.15)
-            : primaryColor.withOpacity(0.1);
+            ? selectedBaseColor.withAlpha(38) // 0.15 * 255
+            : selectedBaseColor.withAlpha(26); // 0.1 * 255
 
     return InkWell(
       onTap: () => _onTabTapped(index),
@@ -231,7 +290,7 @@ class _MainNavigationState extends State<MainNavigation>
               curve: Curves.easeIn,
               child: Icon(
                 icon,
-                color: isSelected ? primaryColor : unselectedColor,
+                color: isSelected ? selectedBaseColor : unselectedColor,
                 size: isSelected ? 26 : 24,
               ),
             ),
@@ -241,7 +300,7 @@ class _MainNavigationState extends State<MainNavigation>
               style: TextStyle(
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? primaryColor : textColor,
+                color: isSelected ? selectedBaseColor : textColor,
               ),
               child: Text(label),
             ),

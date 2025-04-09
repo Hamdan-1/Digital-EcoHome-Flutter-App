@@ -6,11 +6,11 @@ import '../theme.dart';
 class FactorListItem extends StatelessWidget {
   final SustainabilityFactor factor;
 
-  const FactorListItem({Key? key, required this.factor}) : super(key: key);
+  const FactorListItem({super.key, required this.factor});
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark; // Unused variable
     final scoreColor =
         factor.isPositive
             ? AppTheme.getPrimaryColor(context)
@@ -36,7 +36,7 @@ class FactorListItem extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: scoreColor.withOpacity(0.1),
+                  color: scoreColor.withAlpha((0.1 * 255).round()),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(

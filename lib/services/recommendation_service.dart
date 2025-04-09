@@ -110,7 +110,7 @@ class RecommendationService extends ChangeNotifier {
   SavingsPotential? _savingsPotential;
 
   // Usage data by device and type
-  Map<String, Map<String, dynamic>> _usageData = {};
+  final Map<String, Map<String, dynamic>> _usageData = {};
 
   RecommendationService({required String apiKey})
     : _aiService = AiService(apiKey: apiKey);

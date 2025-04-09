@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
+import '../models/data_status.dart'; // Import DataStatus enum
 import '../theme.dart';
 import 'device_control/ac_control_page.dart';
 import 'device_control/washing_machine_control_page.dart';
 import 'device_control/light_control_page.dart';
+import '../widgets/optimized_loading_indicator.dart';
+import '../utils/error_handler.dart';
+// Removed Demo Mode import
 
 class DevicesPage extends StatefulWidget {
   const DevicesPage({super.key});
@@ -24,9 +28,15 @@ class _DevicesPageState extends State<DevicesPage>
   ];
   String _selectedCategory = 'All';
   String _selectedRoom = 'All Rooms';
-  bool _isDiscovering = false;
+  // bool _isDiscovering = false; // Removed unused field
   AnimationController? _scanAnimationController;
   Animation<double>? _scanAnimation;
+
+  // State for Search and Sort
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _isSearchActive = false;
+  String _sortOption = 'usage_desc'; // Default sort: usage descending
 
   @override
   void initState() {
@@ -42,11 +52,19 @@ class _DevicesPageState extends State<DevicesPage>
         curve: Curves.easeInOut,
       ),
     );
+
+    // Listener for search query changes
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
   }
 
   @override
   void dispose() {
     _scanAnimationController?.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -55,9 +73,27 @@ class _DevicesPageState extends State<DevicesPage>
     final appState = Provider.of<AppState>(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // Sort devices by power consumption (highest first)
-    final devices = List<Device>.from(appState.devices)
-      ..sort((a, b) => b.currentUsage.compareTo(a.currentUsage));
+    // Get base list of devices
+    List<Device> devices = List<Device>.from(appState.devices);
+
+    // Apply sorting (will be refined later)
+    devices.sort((a, b) {
+      switch (_sortOption) {
+        case 'name_asc':
+          return a.name.compareTo(b.name);
+        case 'name_desc':
+          return b.name.compareTo(a.name);
+        case 'room_asc':
+          return a.room.compareTo(b.room);
+        case 'room_desc':
+          return b.room.compareTo(a.room);
+        case 'usage_asc':
+          return a.currentUsage.compareTo(b.currentUsage);
+        case 'usage_desc':
+        default:
+          return b.currentUsage.compareTo(a.currentUsage);
+      }
+    });
 
     // Get unique rooms for filtering
     final rooms = ['All Rooms', ...appState.getRooms()];
@@ -73,28 +109,54 @@ class _DevicesPageState extends State<DevicesPage>
               pinned: true,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
-              title: Text(
-                'My Devices',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimaryColor(context),
-                ),
-              ),
+              title: _isSearchActive
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Search devices...',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
+                      ),
+                      style: TextStyle(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontSize: 18,
+                      ),
+                    )
+                  : Text(
+                      'My Devices',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextPrimaryColor(context),
+                      ),
+                    ),
               actions: [
                 IconButton(
                   icon: Icon(
-                    Icons.search,
+                    _isSearchActive ? Icons.close : Icons.search,
                     color: AppTheme.getTextPrimaryColor(context),
                   ),
-                  onPressed: () {},
+                  tooltip: _isSearchActive ? 'Close Search' : 'Search Devices',
+                  onPressed: () {
+                    setState(() {
+                      _isSearchActive = !_isSearchActive;
+                      if (!_isSearchActive) {
+                        _searchController.clear(); // Clear search on close
+                      }
+                    });
+                  },
                 ),
+                // Placeholder for Sort/Filter options
                 IconButton(
                   icon: Icon(
-                    Icons.settings,
+                    Icons.sort, // Changed from settings
                     color: AppTheme.getTextPrimaryColor(context),
                   ),
-                  onPressed: () {},
+                  tooltip: 'Sort Devices',
+                  onPressed: () => _showSortOptions(context), // Corrected onPressed call
                 ),
               ],
             ),
@@ -111,22 +173,18 @@ class _DevicesPageState extends State<DevicesPage>
                     ),
                   ),
                   onPressed:
-                      appState.isScanning
+                      appState.discoveryStatus == DataStatus.loading // Check status enum
                           ? null
                           : () => _handleDeviceDiscovery(appState),
                   icon:
-                      appState.isScanning
-                          ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
+                      appState.discoveryStatus == DataStatus.loading // Check status enum
+                          ? OptimizedLoadingIndicator(
+                              size: 20,
                               color: isDarkMode ? Colors.white : Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                          : const Icon(Icons.search),
+                            )
+                          : const Icon(Icons.wifi_find_outlined), // Changed icon
                   label: Text(
-                    appState.isScanning ? 'Scanning...' : 'Scan for Devices',
+                    appState.discoveryStatus == DataStatus.loading ? 'Scanning...' : 'Scan for Devices', // Check status enum
                   ),
                 ),
               ),
@@ -135,7 +193,7 @@ class _DevicesPageState extends State<DevicesPage>
             // Room filter
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), // Reduced top padding slightly
                 child: Row(
                   children: [
                     Text(
@@ -155,7 +213,7 @@ class _DevicesPageState extends State<DevicesPage>
                           height: 1,
                           color: AppTheme.getPrimaryColor(
                             context,
-                          ).withOpacity(0.5),
+                          ).withAlpha((0.5 * 255).round()),
                         ),
                         onChanged: (String? newValue) {
                           if (newValue != null) {
@@ -188,7 +246,7 @@ class _DevicesPageState extends State<DevicesPage>
             // Category filter
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.only(top: 8.0, bottom: 4.0), // Adjusted vertical padding
                 child: SizedBox(
                   height: 50,
                   child: ListView.builder(
@@ -211,39 +269,48 @@ class _DevicesPageState extends State<DevicesPage>
                           },
                           selectedColor: AppTheme.getPrimaryColor(
                             context,
-                          ).withOpacity(0.2),
-                          checkmarkColor: AppTheme.getPrimaryColor(context),
-                          backgroundColor:
-                              isDarkMode
-                                  ? AppTheme.darkCardColor.withOpacity(0.6)
-                                  : Colors.grey.withOpacity(0.1),
-                          labelStyle: TextStyle(
-                            color:
-                                isSelected
-                                    ? AppTheme.getPrimaryColor(context)
-                                    : AppTheme.getTextSecondaryColor(context),
-                            fontWeight:
-                                isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                          ).withAlpha((0.2 * 255).round()),
+                          checkmarkColor: AppTheme.getPrimaryColor(context), // Ensure theme usage
+                          backgroundColor: isSelected
+                              ? AppTheme.getPrimaryColor(context).withAlpha((0.1 * 255).round()) // Use primary color slightly for selected background
+                              : Theme.of(context).chipTheme.backgroundColor ?? (isDarkMode
+                                  ? AppTheme.darkCardColor.withAlpha((0.6 * 255).round()) // Fallback
+                                  : Colors.grey.withAlpha((0.1 * 255).round())),
+                          labelStyle: Theme.of(context).chipTheme.labelStyle?.copyWith( // Use theme chip style
+                            color: isSelected
+                                ? AppTheme.getPrimaryColor(context)
+                                : AppTheme.getTextSecondaryColor(context),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ) ?? TextStyle( // Fallback style
+                            color: isSelected
+                                ? AppTheme.getPrimaryColor(context)
+                                : AppTheme.getTextSecondaryColor(context),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
+                          side: isSelected // Add border to selected chip
+                              ? BorderSide(color: AppTheme.getPrimaryColor(context).withAlpha((0.5 * 255).round()), width: 1)
+                              : Theme.of(context).chipTheme.side ?? BorderSide.none, // Use theme default or none
                         ),
                       );
                     },
                   ),
                 ),
               ),
-            ),
-
-            // Coming Soon Features Section
+            ), // Coming Soon Features Section
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
                       children: [
+                        Icon(
+                          Icons.rocket_launch_outlined, // Use outlined version
+                          size: 22,
+                          color: AppTheme.getSecondaryColor(context),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           'Coming Soon',
                           style: TextStyle(
@@ -259,236 +326,349 @@ class _DevicesPageState extends State<DevicesPage>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
+                            color: AppTheme.getSecondaryColor(context).withAlpha((0.2 * 255).round()),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.getSecondaryColor(context).withAlpha((0.3 * 255).round()),
+                              width: 1,
+                            ),
                           ),
-                          child: const Text(
+                          child: Text( // Removed const
                             'Beta',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange,
+                              color: AppTheme.getSecondaryColor(context),
                             ),
                           ),
                         ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            // Future feature - Show all upcoming features
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text('See all'),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 120,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildComingSoonFeatureCard(
-                            context,
-                            'Smart Thermostat',
-                            Icons.thermostat,
-                          ),
-                          _buildComingSoonFeatureCard(
-                            context,
-                            'Security System',
-                            Icons.security,
-                          ),
-                          _buildComingSoonFeatureCard(
-                            context,
-                            'Smart Kitchen',
-                            Icons.kitchen,
-                          ),
-                          _buildComingSoonFeatureCard(
-                            context,
-                            'Water Management',
-                            Icons.water_drop,
-                          ),
-                          _buildComingSoonFeatureCard(
-                            context,
-                            'Energy Storage',
-                            Icons.battery_charging_full,
-                          ),
-                        ],
-                      ),
+                  ),
+                  SizedBox(
+                    height: 170,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        _buildComingSoonFeatureCard(
+                          context,
+                          'Smart Thermostat',
+                          Icons.thermostat_outlined,
+                          'Intelligent heating and cooling control',
+                          'May 2025',
+                        ),
+                        _buildComingSoonFeatureCard(
+                          context,
+                          'Security System',
+                          Icons.security_outlined,
+                          'Home security with motion detection',
+                          'June 2025',
+                        ),
+                        _buildComingSoonFeatureCard(
+                          context,
+                          'Smart Kitchen',
+                          Icons.kitchen_outlined,
+                          'Connected appliances and monitoring',
+                          'July 2025',
+                        ),
+                        _buildComingSoonFeatureCard(
+                          context,
+                          'Water Management',
+                          Icons.water_drop_outlined,
+                          'Track and optimize water usage',
+                          'August 2025',
+                        ),
+                        _buildComingSoonFeatureCard(
+                          context,
+                          'Energy Storage',
+                          Icons.battery_charging_full_outlined,
+                          'Store excess energy for later use',
+                          'September 2025',
+                        ),
+                      ],
                     ),
-                    Divider(
-                      height: 32,
-                      color:
-                          isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade300,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      height: 24,
+                      color: Theme.of(context).dividerColor,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
-            // Discovered devices section (when scanning or devices found)
-            if (appState.isScanning || appState.discoveredDevices.isNotEmpty)
+            // Discovered devices section (when loading, has error, or devices found)
+            if (appState.discoveryStatus == DataStatus.loading ||
+                appState.discoveryStatus == DataStatus.error ||
+                (appState.discoveryStatus == DataStatus.success && appState.discoveredDevices.isNotEmpty) ||
+                appState.discoveryStatus == DataStatus.empty) // Show section even if empty after scan
               _buildDiscoveredDevicesSection(appState, context),
 
-            // Devices List
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final device = devices[index];
+            // Devices List - Handle Loading/Error/Empty States
+            _buildDeviceListSection(context, appState, devices),
 
-                // Apply room filter
-                if (_selectedRoom != 'All Rooms' &&
-                    device.room != _selectedRoom) {
-                  return null;
-                }
-
-                // Apply category filter
-                if (_selectedCategory != 'All' &&
-                    !_matchesCategory(device.type, _selectedCategory)) {
-                  return null;
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: _buildDeviceListItem(context, device, appState),
-                );
-              }, childCount: devices.length),
-            ),
-
-            const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 80)), // Padding for FAB
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => _handleDeviceDiscovery(appState), // Trigger scan
         backgroundColor: AppTheme.getPrimaryColor(context),
-        child: const Icon(Icons.add),
+        tooltip: 'Scan for New Devices',
+        child: const Icon(Icons.add_circle_outline), // Updated Icon
       ),
     );
-  }
+  } // End of build method
+
+  // --- Helper Methods ---
 
   Widget _buildDiscoveredDevicesSection(
     AppState appState,
     BuildContext context,
   ) {
+    final bool showSection = appState.discoveryStatus != DataStatus.initial || appState.discoveredDevices.isNotEmpty;
+
+    // Don't show the section at all if it's initial and no devices were ever discovered
+    if (!showSection) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Text(
-                  'Discovered Devices',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (appState.isScanning)
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.getPrimaryColor(context),
-                      ),
+      child: Padding( // Add padding around the whole section
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Column( // Use Column as the main layout element
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Section Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Nearby Devices', // Changed title slightly
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextPrimaryColor(context),
                     ),
                   ),
-                const Spacer(),
-                if (appState.discoveredDevices.isNotEmpty &&
-                    !appState.isScanning)
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        // Clear discovered devices
-                        for (var device in appState.discoveredDevices) {
+                  const SizedBox(width: 8),
+                  if (appState.discoveryStatus == DataStatus.loading)
+                    OptimizedLoadingIndicator(
+                      size: 18,
+                      color: AppTheme.getPrimaryColor(context),
+                    ),
+                  const Spacer(),
+                  if (appState.discoveredDevices.isNotEmpty &&
+                      appState.discoveryStatus != DataStatus.loading)
+                    TextButton.icon( // Use icon button for Add All
+                      onPressed: () {
+                        // Basic feedback: Show snackbar, actual progress needs more state
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Adding all devices...'), duration: Duration(seconds: 1)),
+                        );
+                        final discovered = List<Device>.from(appState.discoveredDevices);
+                        for (var device in discovered) {
                           appState.addDiscoveredDevice(device.id);
                         }
-                      });
-                    },
-                    child: const Text('Add All'),
-                  ),
-              ],
-            ),
-          ),
-          if (appState.isScanning) _buildScanningAnimation(appState),
-          if (!appState.isScanning && appState.discoveredDevices.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('No devices found. Try scanning again.'),
-            ),
-          if (appState.discoveredDevices.isNotEmpty)
-            SizedBox(
-              height: 130,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: appState.discoveredDevices.length,
-                itemBuilder: (context, index) {
-                  final device = appState.discoveredDevices[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _buildDiscoveredDeviceCard(device, appState),
-                  );
-                },
+                        // Force a rebuild slightly later to reflect changes if AppState notifies quickly
+                        Future.delayed(const Duration(milliseconds: 100), () => setState(() {}));
+                      },
+                      icon: const Icon(Icons.playlist_add_check, size: 20),
+                      label: const Text('Add All'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                      ),
+                    ),
+                ],
               ),
+              ),
+              if (appState.discoveryStatus == DataStatus.loading) // Check status enum
+                _buildScanningAnimation(appState),
+            // Content Area (Scanning Animation, Error, Empty, or List)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0), // Consistent horizontal padding
+              child: _buildDiscoveryContent(appState, context),
             ),
-          const Divider(height: 32),
-        ],
+
+            // Divider only if there were discovered devices or error/empty state shown
+            if (appState.discoveryStatus != DataStatus.loading && appState.discoveryStatus != DataStatus.initial)
+              const Divider(height: 24, indent: 16, endIndent: 16), // Add indent
+          ],
+        ),
       ),
     );
   }
 
+  // Helper to build the content area of the discovery section based on status
+  Widget _buildDiscoveryContent(AppState appState, BuildContext context) {
+    switch (appState.discoveryStatus) {
+      case DataStatus.loading:
+        return _buildScanningAnimation(appState);
+
+      case DataStatus.error:
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32), // More padding
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 40, color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: 12),
+                Text(
+                  appState.discoveryError ?? 'An unknown error occurred during scan.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon( // Add Retry Button
+                  onPressed: () => appState.scanForDevices(),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Retry Scan'),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer.withAlpha((0.8 * 255).round()),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case DataStatus.empty:
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.signal_wifi_off_outlined, size: 40, color: Theme.of(context).disabledColor),
+                const SizedBox(height: 12),
+                Text(
+                  'No new devices found nearby.',
+                  style: TextStyle(color: Theme.of(context).disabledColor),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case DataStatus.success:
+        if (appState.discoveredDevices.isEmpty) {
+          // This case might occur if devices were added immediately after discovery
+          // Or if the status is success but the list somehow became empty.
+          // Show a subtle message or nothing.
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: Text("All discovered devices added.", style: TextStyle(fontStyle: FontStyle.italic))),
+          );
+        }
+        // Display the list of discovered devices
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16), // Padding below list
+          child: SizedBox(
+            height: 130, // Keep height or adjust as needed
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              // Remove horizontal padding here as it's handled by the parent Padding
+              itemCount: appState.discoveredDevices.length,
+              itemBuilder: (context, index) {
+                final device = appState.discoveredDevices[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: _buildDiscoveredDeviceCard(device, appState),
+                );
+              },
+            ),
+          ),
+        );
+
+      case DataStatus.initial:
+      // default: // Case is unreachable as all enum values are handled
+        // Don't show anything specific in the initial state before first scan
+        return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildScanningAnimation(AppState appState) {
+    // Add some vertical padding for spacing when shown
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 32.0),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedBuilder(
               animation: _scanAnimationController!,
               builder: (context, child) {
+                // Use opacity animation on the rings for a pulsing effect
+                final double opacityValue = (0.5 + (_scanAnimation!.value * 0.5)); // 0.5 to 1.0
                 return Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Base static ring
                     Container(
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          color: AppTheme.getPrimaryColor(context).withAlpha((0.2 * 255).round()),
                           width: 2,
                         ),
                       ),
                     ),
+                    // Pulsing rings
                     ...List.generate(3, (i) {
-                      final double value = (_scanAnimation!.value + i / 3) % 1;
-                      return Container(
-                        width: 120 * (1 + value * 0.8),
-                        height: 120 * (1 + value * 0.8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppTheme.primaryColor.withOpacity(
-                              0.5 * (1 - value),
+                      final double scaleValue = (_scanAnimation!.value + i / 3) % 1;
+                      return Transform.scale(
+                        scale: 1 + scaleValue * 0.8,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.getPrimaryColor(context).withAlpha(
+                                (opacityValue * (1 - scaleValue) * 0.5 * 255).round(), // Calculate opacity, then convert to alpha
+                              ),
+                              width: 2,
                             ),
-                            width: 2,
                           ),
                         ),
                       );
                     }),
+                    // Central Icon
                     Container(
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppTheme.primaryColor.withOpacity(0.2),
+                        color: AppTheme.getPrimaryColor(context).withAlpha((0.15 * 255).round()),
                       ),
-                      child: const Icon(
-                        Icons.wifi_find,
-                        color: AppTheme.primaryColor,
+                      child: Icon(
+                        Icons.wifi_find_rounded, // Use rounded version
+                        color: AppTheme.getPrimaryColor(context),
                         size: 30,
                       ),
                     ),
@@ -497,9 +677,9 @@ class _DevicesPageState extends State<DevicesPage>
               },
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Searching for smart devices...',
-              style: TextStyle(color: AppTheme.textSecondaryColor),
+            Text(
+              'Searching for nearby devices...', // Slightly different text
+              style: TextStyle(color: AppTheme.getTextSecondaryColor(context)),
             ),
           ],
         ),
@@ -513,16 +693,19 @@ class _DevicesPageState extends State<DevicesPage>
     return Container(
       width: 120,
       decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.darkCardColor : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16), // Slightly larger radius
         border: Border.all(
-          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+          color: Theme.of(context).dividerColor.withAlpha((0.5 * 255).round()),
           width: 1,
         ),
         boxShadow: [
+          // Use theme's shadow if defined, otherwise keep this subtle one
+          // Example: elevation: Theme.of(context).cardTheme.elevation ?? 1,
+          // shadowColor: Theme.of(context).shadowColor,
           if (!isDarkMode)
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Theme.of(context).shadowColor.withAlpha((0.08 * 255).round()), // Slightly darker shadow
               spreadRadius: 1,
               blurRadius: 4,
               offset: const Offset(0, 1),
@@ -530,15 +713,15 @@ class _DevicesPageState extends State<DevicesPage>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0), // More vertical padding
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               _getIconForDevice(device.iconPath),
-              color: AppTheme.primaryColor,
-              size: 28,
+              color: AppTheme.getPrimaryColor(context), // Use theme getter
+              size: 30, // Slightly larger icon
             ),
             const SizedBox(height: 6),
             Padding(
@@ -551,7 +734,7 @@ class _DevicesPageState extends State<DevicesPage>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: AppTheme.getTextPrimaryColor(context),
+                  color: AppTheme.getTextPrimaryColor(context), // Use theme getter
                 ),
               ),
             ),
@@ -559,26 +742,31 @@ class _DevicesPageState extends State<DevicesPage>
             Text(
               device.room,
               style: TextStyle(
-                color: AppTheme.getTextSecondaryColor(context),
+                color: AppTheme.getTextSecondaryColor(context), // Use theme getter
                 fontSize: 10,
               ),
             ),
             const SizedBox(height: 6),
             SizedBox(
-              height: 24,
-              child: ElevatedButton(
+              height: 28, // Slightly taller button
+              child: ElevatedButton.icon( // Use icon button
                 onPressed: () => appState.addDiscoveredDevice(device.id),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.getPrimaryColor(context).withAlpha((0.15 * 255).round()), // Lighter background
+                  foregroundColor: AppTheme.getPrimaryColor(context), // Primary color text/icon
+                  elevation: 0, // No elevation
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10, // Adjust padding
                     vertical: 0,
                   ),
                   minimumSize: Size.zero,
-                  textStyle: const TextStyle(fontSize: 12),
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  shape: RoundedRectangleBorder( // Match card radius
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text('Add'),
+                icon: const Icon(Icons.add, size: 16), // Add icon
+                label: const Text('Add'),
               ),
             ),
           ],
@@ -614,6 +802,112 @@ class _DevicesPageState extends State<DevicesPage>
     }
   }
 
+  // Builds the main device list section, handling different states
+  Widget _buildDeviceListSection(BuildContext context, AppState appState, List<Device> devices) {
+     switch (appState.devicesStatus) {
+      case DataStatus.initial:
+      case DataStatus.loading:
+        return const SliverFillRemaining( // Use SliverFillRemaining to center content
+          child: Center(child: OptimizedLoadingIndicator()),
+        );
+      case DataStatus.error:
+        return SliverFillRemaining(
+          child: ErrorHandler.buildErrorDisplay(
+            context: context,
+            message: appState.devicesError ?? 'Failed to load devices.',
+            // Optionally add a retry callback if AppState provides a way to reload devices
+            // onRetry: () => appState.reloadDevices(), // Example
+          ),
+        );
+      case DataStatus.empty:
+        return SliverFillRemaining(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.devices_other, size: 60, color: Theme.of(context).disabledColor),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Devices Found',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Tap the '+' button below to add your first smart device.",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).disabledColor),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      case DataStatus.success:
+        // Filter devices based on search, room, and category *before* building the list
+        final filteredDevices = devices.where((device) {
+          // Search filter (case-insensitive)
+          final searchLower = _searchQuery.toLowerCase();
+          final nameMatch = device.name.toLowerCase().contains(searchLower);
+          final roomNameMatch = device.room.toLowerCase().contains(searchLower);
+          final searchMatch = _searchQuery.isEmpty || nameMatch || roomNameMatch;
+
+          // Room filter
+          final roomMatch = _selectedRoom == 'All Rooms' || device.room == _selectedRoom;
+
+          // Category filter
+          final categoryMatch = _selectedCategory == 'All' || _matchesCategory(device.type, _selectedCategory);
+
+          return searchMatch && roomMatch && categoryMatch;
+        }).toList();
+
+        if (filteredDevices.isEmpty) {
+           // Show empty state specific to filters/search
+           return SliverFillRemaining(
+             child: Center(
+               child: Padding(
+                 padding: const EdgeInsets.all(32.0),
+                 child: Column( // Use column for icon + text
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.filter_list_off_outlined, size: 40, color: Theme.of(context).disabledColor),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isEmpty
+                          ? 'No devices match the selected filters.'
+                          : 'No devices found for "$_searchQuery".',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).disabledColor),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                 ),
+               ),
+             ),
+           );
+      }
+
+      // Build the list with filtered devices
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final device = filteredDevices[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: _buildDeviceListItem(context, device, appState),
+            );
+          },
+          childCount: filteredDevices.length,
+        ),
+      );
+    }
+  }
+
+
   Widget _buildDeviceListItem(
     BuildContext context,
     Device device,
@@ -622,14 +916,13 @@ class _DevicesPageState extends State<DevicesPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
-      elevation: isDarkMode ? 0 : 2,
-      color: isDarkMode ? AppTheme.darkCardColor : Colors.white,
+      elevation: isDarkMode ? 1 : Theme.of(context).cardTheme.elevation ?? 2, // Consistent elevation or theme
+      color: Theme.of(context).cardTheme.color ?? (isDarkMode ? AppTheme.darkCardColor : Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side:
-            isDarkMode
-                ? BorderSide(color: Colors.grey.shade800, width: 1)
-                : BorderSide.none,
+        side: BorderSide(
+            color: Theme.of(context).dividerColor.withAlpha((isDarkMode ? 0.5 : 0.2 * 255).round()), // Consistent border
+            width: 1),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -640,39 +933,36 @@ class _DevicesPageState extends State<DevicesPage>
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color:
-                device.isActive
-                    ? AppTheme.getPrimaryColor(
-                      context,
-                    ).withOpacity(isDarkMode ? 0.3 : 0.2)
-                    : (isDarkMode
-                        ? Colors.grey.shade800
-                        : Colors.grey.withOpacity(0.1)),
+            color: device.isActive
+                ? AppTheme.getPrimaryColor(context).withAlpha((isDarkMode ? 0.3 : 0.15 * 255).round()) // Adjusted opacity
+                : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             _getIconForDevice(device.iconPath),
-            color:
-                device.isActive
-                    ? AppTheme.getPrimaryColor(context)
-                    : isDarkMode
-                    ? Colors.grey.shade500
-                    : Colors.grey,
+            color: device.isActive
+                ? AppTheme.getPrimaryColor(context)
+                : Theme.of(context).disabledColor,
+            size: 28, // Slightly larger icon
           ),
         ),
         title: Text(
           device.name,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.getTextPrimaryColor(context),
+            color: AppTheme.getTextPrimaryColor(context), // Use theme getter
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space
           children: [
             const SizedBox(height: 4),
+            // Row 1: Room & Status
             Row(
               children: [
+                Icon(Icons.location_on_outlined, size: 14, color: AppTheme.getTextSecondaryColor(context)),
+                const SizedBox(width: 4),
                 Text(
                   device.room,
                   style: TextStyle(
@@ -680,42 +970,40 @@ class _DevicesPageState extends State<DevicesPage>
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
+                const SizedBox(width: 12), // More spacing
+                Container( // Status Indicator Dot
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        device.isActive
-                            ? Colors.green
-                            : isDarkMode
-                            ? Colors.grey.shade600
-                            : Colors.grey,
+                    color: device.isActive
+                        ? AppTheme.getSuccessColor(context)
+                        : Theme.of(context).disabledColor.withAlpha((0.7 * 255).round()), // Slightly less prominent when off
                   ),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  device.isActive ? 'Connected' : 'Disconnected',
+                Text( // Status Text
+                  device.isActive ? 'Online' : 'Offline', // Changed text
                   style: TextStyle(
-                    color: AppTheme.getTextSecondaryColor(context),
+                    color: device.isActive
+                        ? AppTheme.getSuccessColor(context)
+                        : Theme.of(context).disabledColor.withAlpha((0.9 * 255).round()),
                     fontSize: 12,
+                    fontWeight: device.isActive ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6), // More spacing
+            // Row 2: Usage & Device Specific Info
             Row(
               children: [
                 Icon(
                   Icons.bolt,
                   size: 14,
-                  color:
-                      device.isActive
-                          ? AppTheme.getPrimaryColor(context)
-                          : isDarkMode
-                          ? Colors.grey.shade500
-                          : Colors.grey,
+                  color: device.isActive
+                      ? AppTheme.getPrimaryColor(context)
+                      : Theme.of(context).disabledColor,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -723,25 +1011,42 @@ class _DevicesPageState extends State<DevicesPage>
                       ? '${device.currentUsage.toStringAsFixed(0)} W'
                       : 'Inactive',
                   style: TextStyle(
-                    color:
-                        device.isActive
-                            ? AppTheme.getPrimaryColor(context)
-                            : isDarkMode
-                            ? Colors.grey.shade500
-                            : Colors.grey,
+                    color: device.isActive
+                        ? AppTheme.getPrimaryColor(context)
+                        : Theme.of(context).disabledColor,
                     fontWeight: FontWeight.bold,
+                    fontSize: 13, // Slightly larger usage text
                   ),
                 ),
+                const SizedBox(width: 12),
+                // Device Specific Info (e.g., Temp for AC, Brightness for Light)
+                _buildDeviceSpecificSubtitleInfo(context, device),
               ],
             ),
+            // Optional: Usage Bar
+            if (device.isActive && device.maxUsage > 0) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 4, // Thin progress bar
+                child: LinearProgressIndicator(
+                  value: (device.currentUsage / device.maxUsage).clamp(0.0, 1.0),
+                  backgroundColor: Theme.of(context).dividerColor.withAlpha((0.3 * 255).round()),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.getPrimaryColor(context).withAlpha((0.8 * 255).round()),
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
           ],
         ),
         trailing: Switch(
           value: device.isActive,
           onChanged: (_) => appState.toggleDevice(device.id),
           activeColor: AppTheme.getPrimaryColor(context),
-          inactiveThumbColor: isDarkMode ? Colors.grey.shade600 : null,
-          inactiveTrackColor: isDarkMode ? Colors.grey.shade800 : null,
+          // Rely on theme defaults for inactive colors or use theme colors explicitly
+          // inactiveThumbColor: Theme.of(context).disabledColor,
+          // inactiveTrackColor: Theme.of(context).disabledColor.withAlpha((0.3 * 255).round()),
         ),
         onTap: () {
           _navigateToDeviceControl(context, device);
@@ -793,96 +1098,276 @@ class _DevicesPageState extends State<DevicesPage>
         return Icons.device_unknown;
     }
   }
+  
+  // Helper widget to display device-specific info in the subtitle
+  Widget _buildDeviceSpecificSubtitleInfo(BuildContext context, Device device) {
+    if (!device.isActive || device.settings == null) {
+      return const SizedBox.shrink(); // Return empty if inactive or no settings
+    }
+  
+    List<Widget> infoWidgets = [];
+    final secondaryColor = AppTheme.getTextSecondaryColor(context);
+    final textStyle = TextStyle(color: secondaryColor, fontSize: 12);
+  
+    // HVAC Temperature
+    if (device.type == 'HVAC' && device.settings!['temperature'] != null) {
+      final temp = device.settings!['temperature'];
+      // Assuming AppState has formatting helpers (add if needed)
+      // final formattedTemp = Provider.of<AppState>(context, listen: false).formatTemperature(temp.toDouble());
+      final formattedTemp = '$temp°C'; // Simple formatting for now
+      infoWidgets.addAll([
+        Icon(Icons.thermostat_outlined, size: 14, color: secondaryColor),
+        const SizedBox(width: 4),
+        Text(formattedTemp, style: textStyle),
+      ]);
+    }
+    // Light Brightness
+    else if (device.type == 'Light' && device.settings!['brightness'] != null) {
+      final brightness = device.settings!['brightness'];
+      infoWidgets.addAll([
+        Icon(Icons.brightness_6_outlined, size: 14, color: secondaryColor),
+        const SizedBox(width: 4),
+        Text('$brightness%', style: textStyle),
+      ]);
+    }
+    // Washing Machine Status (Example)
+    else if (device.type == 'Appliance' && device.iconPath == 'local_laundry_service' && device.settings!['isRunning'] == true) {
+       final remaining = device.settings!['remainingMinutes'] ?? 0;
+       infoWidgets.addAll([
+         Icon(Icons.timelapse, size: 14, color: secondaryColor),
+         const SizedBox(width: 4),
+         Text('$remaining min', style: textStyle),
+       ]);
+    }
+  
+    if (infoWidgets.isEmpty) {
+      return const SizedBox.shrink();
+    }
+  
+    // Use a Row for the specific info elements
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: infoWidgets,
+    );
+  }
+  
 
   Widget _buildComingSoonFeatureCard(
     BuildContext context,
     String title,
     IconData icon,
+    String description,
+    String releaseDate,
   ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppTheme.getPrimaryColor(context);
 
     return Container(
-      width: MediaQuery.of(context).size.width * 0.43,
-      margin: const EdgeInsets.only(right: 12),
+      width: MediaQuery.of(context).size.width * 0.75,
+      margin: const EdgeInsets.only(right: 16, bottom: 4),
       decoration: BoxDecoration(
-        color:
-            isDarkMode
-                ? AppTheme.darkCardColor.withOpacity(0.8)
-                : Colors.grey[100],
-        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface.withAlpha((isDarkMode ? 0.8 : 1.0 * 255).round()),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDarkMode ? Colors.grey.shade800 : Colors.grey[300]!,
+          color: Theme.of(context).dividerColor.withAlpha((0.5 * 255).round()),
           width: 1,
         ),
         boxShadow: [
           if (!isDarkMode)
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+              color: Theme.of(context).shadowColor.withAlpha((0.08 * 255).round()), // Match discovered card shadow
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
             ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color:
-                    isDarkMode
-                        ? Colors.grey.shade800.withOpacity(0.5)
-                        : Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: AppTheme.getPrimaryColor(context),
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isDarkMode
-                            ? AppTheme.getPrimaryColor(context).withOpacity(0.2)
-                            : AppTheme.getPrimaryColor(
-                              context,
-                            ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Coming Soon',
-                    style: TextStyle(
-                      color: AppTheme.getPrimaryColor(context),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Show feature details when tapped
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$title coming in $releaseDate'),
+                  duration: const Duration(seconds: 2),
                 ),
-              ],
+              );
+            },
+            splashColor: primaryColor.withAlpha((0.1 * 255).round()),
+            highlightColor: primaryColor.withAlpha((0.05 * 255).round()),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(icon, color: primaryColor, size: 26),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppTheme.getTextPrimaryColor(context), // Use theme getter
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.getTextSecondaryColor(context), // Use theme getter
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: primaryColor.withAlpha((0.2 * 255).round()),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Coming Soon',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: AppTheme.getTextSecondaryColor(context), // Use theme getter
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            releaseDate,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.getTextSecondaryColor(context), // Use theme getter
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
+  } // End of _buildComingSoonFeatureCard method
+
+
+  // --- Sorting Logic ---
+
+  void _showSortOptions(BuildContext context) {
+    final Map<String, String> sortOptions = {
+      'usage_desc': 'Usage: High to Low',
+      'usage_asc': 'Usage: Low to High',
+      'name_asc': 'Name: A to Z',
+      'name_desc': 'Name: Z to A',
+      'room_asc': 'Room: A to Z',
+      'room_desc': 'Room: Z to A',
+    };
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).cardColor, // Use theme card color
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext bc) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  'Sort Devices By',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextPrimaryColor(context),
+                  ),
+                ),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              ...sortOptions.entries.map((entry) {
+                final key = entry.key;
+                final value = entry.value;
+                final isSelected = _sortOption == key;
+
+                return ListTile(
+                  title: Text(
+                    value,
+                    style: TextStyle(
+                      color: isSelected ? AppTheme.getPrimaryColor(context) : AppTheme.getTextPrimaryColor(context),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  leading: Icon(
+                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked, // Corrected icon name
+                    color: isSelected ? AppTheme.getPrimaryColor(context) : AppTheme.getTextSecondaryColor(context),
+                    size: 22,
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _sortOption = key;
+                    });
+                    Navigator.pop(context); // Close the bottom sheet
+                  },
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+                );
+              }), // .toList() is unnecessary here
+              const SizedBox(height: 8), // Bottom padding
+            ],
+          ),
+        );
+      },
+    );
   }
-}
+
+} // End of _DevicesPageState class

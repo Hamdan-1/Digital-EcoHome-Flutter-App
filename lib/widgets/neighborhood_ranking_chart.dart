@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // Assuming fl_chart is used
 import '../theme.dart';
-import 'dart:math' as math;
+// import 'dart:math' as math; // Unused import
 
 class NeighborhoodRankingChart extends StatelessWidget {
   final double userScore;
@@ -9,11 +9,11 @@ class NeighborhoodRankingChart extends StatelessWidget {
   final double averageScore;
 
   const NeighborhoodRankingChart({
-    Key? key,
+    super.key,
     required this.userScore,
     required this.neighborhoodScores,
     required this.averageScore,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

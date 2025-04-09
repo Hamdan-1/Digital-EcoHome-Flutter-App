@@ -16,7 +16,7 @@ class UsageChart extends StatefulWidget {
   final Color? gradientEndColor;
 
   const UsageChart({
-    Key? key,
+    super.key,
     required this.data,
     this.lineColor = AppTheme.primaryColor,
     this.fillColor = const Color(0x204CAF50), // Semi-transparent primary color
@@ -26,7 +26,7 @@ class UsageChart extends StatefulWidget {
     this.maxHeight,
     this.gradientStartColor,
     this.gradientEndColor,
-  }) : super(key: key);
+  });
 
   @override
   State<UsageChart> createState() => _UsageChartState();
@@ -39,8 +39,8 @@ class _UsageChartState extends State<UsageChart>
   int? _touchedIndex;
 
   // For repaint optimization
-  final _chartKey = GlobalKey();
-  bool _isInView = true;
+  // final _chartKey = GlobalKey(); // Unused field
+  // bool _isInView = true; // Unused field
 
   @override
   void initState() {
@@ -111,11 +111,11 @@ class _UsageChartState extends State<UsageChart>
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withAlpha((0.8 * 255).round()),
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withAlpha((0.1 * 255).round()),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -175,10 +175,10 @@ class _UsageChartState extends State<UsageChart>
           widget.data.length / 5,
         ),
         getDrawingHorizontalLine: (value) {
-          return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 0.5);
+          return FlLine(color: Colors.grey.withAlpha((0.2 * 255).round()), strokeWidth: 0.5);
         },
         getDrawingVerticalLine: (value) {
-          return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 0.5);
+          return FlLine(color: Colors.grey.withAlpha((0.2 * 255).round()), strokeWidth: 0.5);
         },
       ),
       titlesData: FlTitlesData(
@@ -191,8 +191,9 @@ class _UsageChartState extends State<UsageChart>
             reservedSize: 22,
             interval: widget.data.length ~/ 6 > 0 ? widget.data.length / 6 : 1,
             getTitlesWidget: (value, meta) {
-              if (value % 1 != 0 || value < 0 || value >= widget.data.length)
+              if (value % 1 != 0 || value < 0 || value >= widget.data.length) {
                 return const SizedBox();
+              }
               final index = value.toInt();
               final hoursAgo = widget.data.length - 1 - index;
 
@@ -243,7 +244,7 @@ class _UsageChartState extends State<UsageChart>
       maxY: maxValue,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          tooltipBgColor: Colors.white.withOpacity(0.8),
+          tooltipBgColor: Colors.white.withAlpha((0.8 * 255).round()),
           tooltipRoundedRadius: 8,
           getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
             return touchedBarSpots.map((barSpot) {
@@ -292,7 +293,7 @@ class _UsageChartState extends State<UsageChart>
           }),
           isCurved: true,
           gradient: LinearGradient(
-            colors: [widget.lineColor.withOpacity(0.8), widget.lineColor],
+            colors: [widget.lineColor.withAlpha((0.8 * 255).round()), widget.lineColor],
           ),
           barWidth: widget.lineWidth,
           isStrokeCapRound: true,
@@ -313,8 +314,8 @@ class _UsageChartState extends State<UsageChart>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                widget.gradientStartColor ?? widget.lineColor.withOpacity(0.3),
-                widget.gradientEndColor ?? widget.lineColor.withOpacity(0.05),
+                widget.gradientStartColor ?? widget.lineColor.withAlpha((0.3 * 255).round()),
+                widget.gradientEndColor ?? widget.lineColor.withAlpha((0.05 * 255).round()),
               ],
             ),
           ),

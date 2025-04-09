@@ -19,13 +19,13 @@ class OptimizedLoadingIndicator extends StatelessWidget {
   final int animationDurationMs;
 
   const OptimizedLoadingIndicator({
-    Key? key,
+    super.key,
     this.size = 40.0,
     this.message,
     this.color,
     this.useBackdrop = false,
     this.animationDurationMs = 1200,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +50,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    loaderColor.withOpacity(0.2),
+                    loaderColor.withAlpha((0.2 * 255).round()),
                   ),
                 ),
               ),
@@ -81,7 +81,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
                       height: size * 0.5,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: loaderColor.withOpacity(0.3),
+                        color: loaderColor.withAlpha((0.3 * 255).round()),
                       ),
                     ),
                   );
@@ -108,7 +108,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
 
     if (useBackdrop) {
       return Container(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withAlpha((0.3 * 255).round()),
         child: Center(
           child: Card(
             elevation: 4,
@@ -135,11 +135,11 @@ class OverlayLoadingIndicator extends StatelessWidget {
   final String? message;
 
   const OverlayLoadingIndicator({
-    Key? key,
+    super.key,
     required this.isLoading,
     required this.child,
     this.message,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -13,6 +13,8 @@ class AppTheme {
   static const Color textSecondaryColor = Color(
     0xFF718096,
   ); // lighter gray for secondary text
+  static const Color successColor = Color(0xFF388E3C); // Green 700
+  static const Color errorColor = Color(0xFFD32F2F);   // Red 700
 
   // Dark theme colors
   static const Color darkPrimaryColor = Color(0xFF43A047); // darker eco-green
@@ -29,6 +31,9 @@ class AppTheme {
   static const Color darkTextSecondaryColor = Color(
     0xFFAAAAAA,
   ); // medium gray for secondary text
+  // Using the same success/error colors for dark theme as they have sufficient contrast
+  static const Color darkSuccessColor = Color(0xFF388E3C); // Green 700
+  static const Color darkErrorColor = Color(0xFFD32F2F);   // Red 700
 
   // Light theme for the app
   static ThemeData lightTheme = ThemeData(
@@ -123,17 +128,17 @@ class AppTheme {
       ),
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
+      thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
           return darkPrimaryColor;
         }
         return Colors.grey;
       }),
-      trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
-          return darkPrimaryColor.withOpacity(0.5);
+      trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return darkPrimaryColor.withAlpha((0.5 * 255).round());
         }
-        return Colors.grey.withOpacity(0.5);
+        return Colors.grey.withAlpha((0.5 * 255).round());
       }),
     ),
     iconTheme: const IconThemeData(color: darkTextPrimaryColor),
@@ -169,9 +174,27 @@ class AppTheme {
         : primaryColor;
   }
 
+  static Color getSecondaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkSecondaryColor
+        : secondaryColor;
+  }
+
   static Color getCardColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? darkCardColor
         : Colors.white;
+  }
+
+  static Color getSuccessColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkSuccessColor
+        : successColor;
+  }
+
+  static Color getErrorColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkErrorColor
+        : errorColor;
   }
 }

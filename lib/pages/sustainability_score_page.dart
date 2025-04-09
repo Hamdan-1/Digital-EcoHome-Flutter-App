@@ -11,6 +11,8 @@ import '../widgets/neighborhood_ranking_chart.dart';
 import '../widgets/challenge_card.dart'; // Import new widgets
 import '../widgets/achievement_badge.dart';
 import '../widgets/streak_display.dart';
+import '../widgets/optimized_loading_indicator.dart';
+import '../utils/error_handler.dart';
 
 class SustainabilityScorePage extends StatefulWidget {
   const SustainabilityScorePage({super.key});
@@ -23,6 +25,7 @@ class SustainabilityScorePage extends StatefulWidget {
 class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
   late SustainabilityScore _sustainabilityScore;
   bool _isLoading = true;
+  String? _error; // Add state for error message
   late AppState _appState; // Store AppState for easy access
 
   @override
@@ -38,24 +41,45 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
   }
 
   Future<void> _loadSustainabilityScore() async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return; // Check if mounted
 
-    // Use the stored _appState instance
-    _sustainabilityScore = SustainabilityScore.calculate(
-      averageDailyEnergyKwh: _appState.calculateAverageDailyUsage(),
-      activeDevicesCount: _appState.getActiveDevicesCount(),
-      hasSolarPanels: _appState.hasSolarPanels(),
-      hasSmartThermostat: _appState.hasSmartThermostat(),
-      usesLedLighting: _appState.usesLedLighting(),
-      peakHourUsagePercent: _appState.calculatePeakHourUsagePercent(),
-      recentDailyUsage: _appState.getRecentDailyUsage(),
-    );
+    setState(() {
+      _isLoading = true;
+      _error = null; // Clear previous error on refresh/load
+    });
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    try {
+      // Simulate network delay or actual async data fetching
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      // Ensure AppState data is ready (if it were async, we'd check its status here)
+      // For now, assume AppState methods provide data directly or handle their own errors
+
+      // Use the stored _appState instance for calculations
+      _sustainabilityScore = SustainabilityScore.calculate(
+        averageDailyEnergyKwh: _appState.calculateAverageDailyUsage(),
+        activeDevicesCount: _appState.getActiveDevicesCount(),
+        hasSolarPanels: _appState.hasSolarPanels(),
+        hasSmartThermostat: _appState.hasSmartThermostat(),
+        usesLedLighting: _appState.usesLedLighting(),
+        peakHourUsagePercent: _appState.calculatePeakHourUsagePercent(),
+        recentDailyUsage: _appState.getRecentDailyUsage(),
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Error is already null from the start of the try block
+        });
+      }
+    } catch (e, stackTrace) {
+       debugPrint("Error loading sustainability score: $e\n$stackTrace");
+       if (mounted) {
+         setState(() {
+           _isLoading = false;
+           _error = "Could not calculate sustainability score. Please try again.";
+         });
+       }
     }
   }
 
@@ -65,13 +89,27 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     final appState = Provider.of<AppState>(context);
 
     return Scaffold(
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildContent(
-                appState.gamificationState,
-              ), // Pass gamification state
+      body: _buildBody(appState), // Use a helper to handle states
     );
+  }
+
+  Widget _buildBody(AppState appState) {
+    if (_isLoading) {
+      return const Center(child: OptimizedLoadingIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: ErrorHandler.buildErrorDisplay(
+          context: context,
+          message: _error!,
+          onRetry: _loadSustainabilityScore, // Allow retry
+        ),
+      );
+    }
+
+    // If loaded successfully and no error
+    return _buildContent(appState.gamificationState);
   }
 
   Widget _buildContent(GamificationState gamificationState) {
@@ -141,13 +179,14 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
                   color: AppTheme.getTextPrimaryColor(context),
                 ),
               ),
-            ),
-            const SizedBox(height: 16), // Reduced space
-            ScoreGauge(
-              score: _sustainabilityScore.score,
-              scoreLabel: _sustainabilityScore.getScoreLabel(),
-              scoreColor: _sustainabilityScore.getScoreColor(),
-            ),
+           ),
+           const SizedBox(height: 16), // Reduced space
+           // KeyedSubtree removed as sustainabilityScoreGaugeKey is undefined
+           ScoreGauge(
+             score: _sustainabilityScore.score,
+             scoreLabel: _sustainabilityScore.getScoreLabel(),
+             scoreColor: _sustainabilityScore.getScoreColor(),
+           ),
             const SizedBox(height: 16),
             // Gamification Stats Row
             Row(
@@ -245,7 +284,7 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
           context,
         ),
         const SizedBox(height: 12),
-        Container(
+        SizedBox( // Replaced Container with SizedBox for height constraint
           height: 70, // Fixed height for horizontal scrolling badges
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -439,7 +478,7 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
                       height: 5,
                       margin: const EdgeInsets.only(bottom: 15),
                       decoration: BoxDecoration(
-                        color: Colors.grey[400],
+                        color: Theme.of(context).dividerColor, // Use theme color
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),

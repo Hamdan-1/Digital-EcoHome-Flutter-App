@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../models/app_state.dart';
+import '../../models/data_status.dart'; // Import DataStatus
 import '../../theme.dart';
+import '../../widgets/optimized_loading_indicator.dart';
+import '../../utils/error_handler.dart'; // Import ErrorHandler
 
 class WashingMachineControlPage extends StatefulWidget {
   final String deviceId;
@@ -45,21 +48,40 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
   }
 
   void _loadDeviceSettings() {
+    // Add mounted check
+    if (!mounted) return;
+
     final appState = Provider.of<AppState>(context, listen: false);
-    final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
+    // Only try loading settings if the device list is successfully loaded
+    if (appState.devicesStatus == DataStatus.success) {
+      try {
+        final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
 
-    if (device is SmartWashingMachine && device.settings != null) {
-      setState(() {
-        _selectedCycle = device.settings!['cycle'] as String;
-        _selectedTemperature = device.settings!['temperature'] as String;
-        _selectedSpinSpeed = device.settings!['spinSpeed'] as String;
-        _remainingMinutes = device.settings!['remainingMinutes'] as int;
-        _progress = device.settings!['progress'] as double;
-        _isRunning = device.settings!['isRunning'] as bool;
-      });
+        if (device is SmartWashingMachine && device.settings != null) {
+          // Check mounted again before setState
+          if (!mounted) return;
+          setState(() {
+            _selectedCycle = device.settings!['cycle'] as String;
+            _selectedTemperature = device.settings!['temperature'] as String;
+            _selectedSpinSpeed = device.settings!['spinSpeed'] as String;
+            _remainingMinutes = device.settings!['remainingMinutes'] as int;
+            _progress = device.settings!['progress'] as double;
+            _isRunning = device.settings!['isRunning'] as bool;
+            _settingsChanged = false; // Reset changed flag after loading
+          });
 
-      if (_isRunning && device.isActive) {
-        _startProgressTimer();
+          // Start timer only if running and device is active
+          if (_isRunning && device.isActive) {
+            _startProgressTimer();
+          } else {
+            _progressTimer?.cancel(); // Ensure timer is cancelled if not running
+          }
+        }
+      } catch (e) {
+        // Handle case where device might not be found even if list is loaded
+        debugPrint("Error loading device settings for ${widget.deviceId}: $e");
+        // Optionally show a snackbar or set an error state if needed,
+        // but the build method will handle the primary "not found" case.
       }
     }
   }
@@ -126,9 +148,9 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
 
             // Show completion notification
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar( // Removed const
                 content: Text('Washing cycle complete!'),
-                backgroundColor: Colors.green,
+                backgroundColor: AppTheme.getSuccessColor(context), // Use theme color
                 duration: Duration(seconds: 3),
               ),
             );
@@ -224,7 +246,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                   : 'Washing cycle paused'
               : 'Failed to update settings. Please try again.',
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor: success ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
         duration: const Duration(seconds: 2),
       ),
     );
@@ -264,7 +286,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
               ? 'Settings updated successfully'
               : 'Failed to update settings. Please try again.',
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor: success ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
         duration: const Duration(seconds: 2),
       ),
     );
@@ -273,87 +295,108 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final device = appState.devices.firstWhere(
-      (d) => d.id == widget.deviceId,
-      orElse:
-          () => Device(
-            id: '',
-            name: 'Unknown Device',
-            type: 'Appliance',
-            isActive: false,
-            currentUsage: 0,
-            iconPath: 'local_laundry_service',
-            maxUsage: 0,
+
+    // Handle overall device list loading/error states first
+    switch (appState.devicesStatus) {
+      case DataStatus.initial:
+      case DataStatus.loading:
+        return Scaffold(
+          appBar: AppBar(title: const Text('Loading Device...')),
+          body: const Center(child: OptimizedLoadingIndicator()),
+        );
+      case DataStatus.error:
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(
+            child: ErrorHandler.buildErrorDisplay(
+              context: context,
+              message: appState.devicesError ?? 'Failed to load devices.',
+              // Optionally add retry for the device list itself if AppState supports it
+            ),
           ),
-    );
-
-    if (device.id.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Device Not Found')),
-        body: const Center(child: Text('The device could not be found.')),
-      );
+        );
+      case DataStatus.empty:
+      case DataStatus.success:
+        // Try to find the specific device
+        try {
+          final device = appState.devices.firstWhere((d) => d.id == widget.deviceId);
+          // If found, build the controls UI
+          return _buildDeviceControls(context, appState, device);
+        } catch (e) {
+          // Device not found in the list
+          return Scaffold(
+            appBar: AppBar(title: const Text('Device Not Found')),
+            body: Center(
+              child: ErrorHandler.buildErrorDisplay(
+                context: context,
+                message: 'Device with ID ${widget.deviceId} could not be found.',
+                // Remove onRetry for "Device Not Found" - user should use back button.
+                // onRetry: () => Navigator.of(context).pop(),
+              ),
+            ),
+          );
+        }
     }
+  }
 
-    return Scaffold(
+  // Extracted method to build the main UI when the device is found
+  Widget _buildDeviceControls(BuildContext context, AppState appState, Device device) {
+     return Scaffold(
       appBar: AppBar(
         title: Text(device.name),
         actions: [
-          if (_settingsChanged)
+          if (_settingsChanged && !_isUpdating) // Show save only if changed and not updating
             IconButton(
               icon: const Icon(Icons.save),
-              onPressed: _isUpdating ? null : () => _saveSettings(appState),
+              tooltip: 'Save Settings',
+              onPressed: () => _saveSettings(appState),
             ),
+          if (_isUpdating) // Show loading indicator in AppBar while updating
+             Padding(
+               padding: const EdgeInsets.only(right: 16.0),
+               child: Center(child: OptimizedLoadingIndicator(size: 20, color: Theme.of(context).colorScheme.onPrimary)), // Use theme color
+             ),
         ],
       ),
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // Device status card
-              _buildStatusCard(device),
-
-              const SizedBox(height: 20),
-
-              // Cycle progress card (if running)
-              if (_isRunning || _progress > 0) _buildProgressCard(),
-
-              const SizedBox(height: 20),
-
-              // Cycle selection
-              _buildCycleSelection(),
-
-              const SizedBox(height: 20),
-
-              // Temperature and spin settings
-              _buildSettingsSection(),
-
-              const SizedBox(height: 20),
-
-              // Timer info
-              _buildTimerInfo(),
-
-              const SizedBox(height: 100), // Bottom padding for FAB
-            ],
-          ),
-
-          if (_isUpdating)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-        ],
+      body: RefreshIndicator( // Allow pull-to-refresh for device state
+        onRefresh: () async {
+           // Trigger a state refresh, AppState simulation might update automatically
+           // or we might need a specific refresh method in AppState later.
+           if (mounted) setState(() {});
+        },
+        child: ListView( // Keep ListView for scrollability
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            // Device status card
+            _buildStatusCard(device),
+            const SizedBox(height: 20),
+            // Cycle progress card (if running or completed)
+            if (_isRunning || _progress > 0) _buildProgressCard(),
+            const SizedBox(height: 20),
+            // Cycle selection
+            _buildCycleSelection(),
+            const SizedBox(height: 20),
+            // Temperature and spin settings
+            _buildSettingsSection(),
+            const SizedBox(height: 20),
+            // Timer info
+            _buildTimerInfo(),
+            const SizedBox(height: 100), // Bottom padding for FAB
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isUpdating ? null : () => _toggleRunning(appState),
         backgroundColor: _getActionButtonColor(),
         icon: Icon(_getActionButtonIcon()),
         label: Text(_getActionButtonLabel()),
+        tooltip: _getActionButtonLabel(), // Add tooltip for accessibility
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
+  // Placeholder: Map these hardcoded colors to theme colors (e.g., primary, secondary, success, error)
   Color _getActionButtonColor() {
     if (_isRunning) {
       return Colors.orange;
@@ -404,14 +447,14 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
               decoration: BoxDecoration(
                 color:
                     device.isActive
-                        ? AppTheme.primaryColor.withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.1),
+                        ? AppTheme.getPrimaryColor(context).withAlpha((0.2 * 255).round())
+                        : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Use theme color
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 Icons.local_laundry_service,
                 size: 32,
-                color: device.isActive ? AppTheme.primaryColor : Colors.grey,
+                color: device.isActive ? AppTheme.getPrimaryColor(context) : Theme.of(context).disabledColor, // Use theme color
               ),
             ),
             const SizedBox(width: 16),
@@ -434,7 +477,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                         height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: device.isActive ? Colors.green : Colors.grey,
+                          color: device.isActive ? AppTheme.getSuccessColor(context) : Theme.of(context).disabledColor, // Use theme colors
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -448,7 +491,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                           color:
                               device.isActive
                                   ? _isRunning
-                                      ? Colors.green
+                                      ? AppTheme.getSuccessColor(context) // Use theme color
                                       : AppTheme.textSecondaryColor
                                   : AppTheme.textSecondaryColor,
                         ),
@@ -500,13 +543,13 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
 
     if (_progress >= 1.0) {
       statusText = 'Cycle Complete';
-      statusColor = Colors.green;
+      statusColor = AppTheme.getSuccessColor(context); // Use theme color
     } else if (_isRunning) {
       statusText = 'Washing...';
-      statusColor = Colors.blue;
+      statusColor = AppTheme.getSecondaryColor(context); // Use theme color
     } else {
       statusText = 'Paused';
-      statusColor = Colors.orange;
+      statusColor = AppTheme.getSecondaryColor(context).withAlpha((0.8 * 255).round()); // Use theme color (e.g., secondary variant)
     }
 
     return Card(
@@ -534,7 +577,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withAlpha((0.2 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -552,9 +595,9 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: Colors.grey.withOpacity(0.2),
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, // Use theme color
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  _progress >= 1.0 ? Colors.green : AppTheme.primaryColor,
+                  _progress >= 1.0 ? AppTheme.getSuccessColor(context) : AppTheme.getPrimaryColor(context), // Use theme colors
                 ),
                 minHeight: 10,
               ),
@@ -638,14 +681,14 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                         decoration: BoxDecoration(
                           color:
                               isSelected
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey.withOpacity(0.1),
+                                  ? AppTheme.getPrimaryColor(context)
+                                  : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Use theme color
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color:
                                 isSelected
-                                    ? AppTheme.primaryColor
-                                    : Colors.transparent,
+                                    ? AppTheme.getPrimaryColor(context)
+                                    : Colors.transparent, // Keep transparent for non-selected border
                             width: 1,
                           ),
                         ),
@@ -655,7 +698,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                               _getCycleIcon(cycle),
                               color:
                                   isSelected
-                                      ? Colors.white
+                                      ? Theme.of(context).colorScheme.onPrimary // Use theme color
                                       : AppTheme.textSecondaryColor,
                               size: 28,
                             ),
@@ -665,7 +708,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                               style: TextStyle(
                                 color:
                                     isSelected
-                                        ? Colors.white
+                                        ? Theme.of(context).colorScheme.onPrimary // Use theme color
                                         : AppTheme.textSecondaryColor,
                                 fontWeight:
                                     isSelected
@@ -680,9 +723,8 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                                 fontSize: 12,
                                 color:
                                     isSelected
-                                        ? Colors.white.withOpacity(0.8)
-                                        : AppTheme.textSecondaryColor
-                                            .withOpacity(0.8),
+                                        ? Theme.of(context).colorScheme.onPrimary.withAlpha((0.8 * 255).round()) // Use theme color
+                                        : AppTheme.textSecondaryColor.withAlpha((0.8 * 255).round()),
                               ),
                             ),
                           ],
@@ -761,7 +803,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Use theme color
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -811,7 +853,7 @@ class _WashingMachineControlPageState extends State<WashingMachineControlPage> {
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Use theme color
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(

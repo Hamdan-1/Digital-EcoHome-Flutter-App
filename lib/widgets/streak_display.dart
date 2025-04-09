@@ -4,7 +4,7 @@ import '../theme.dart';
 class StreakDisplay extends StatelessWidget {
   final int streakDays;
 
-  const StreakDisplay({Key? key, required this.streakDays}) : super(key: key);
+  const StreakDisplay({super.key, required this.streakDays});
 
   @override
   Widget build(BuildContext context) {

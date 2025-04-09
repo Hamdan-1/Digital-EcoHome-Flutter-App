@@ -5,6 +5,7 @@ import 'dart:async';
 import '../main.dart';
 import '../theme.dart';
 import '../providers/theme_provider.dart';
+import '../utils/custom_page_transitions.dart'; // Import custom transitions
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,16 +15,16 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-
+  late AnimationController _loadingAnimationController;
   @override
   void initState() {
     super.initState();
 
-    // Initialize animations
+    // Initialize main animations
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -43,25 +44,18 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Start animation and navigate to home after delay
+    // Initialize loading animation
+    _loadingAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(); // Start animation and navigate to home after delay
     _animationController.forward();
     Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder:
-              (context, animation, secondaryAnimation) =>
-                  const MainNavigation(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var curve = Curves.easeInOut;
-            var curveTween = CurveTween(curve: curve);
-            var fadeAnimation = Tween<double>(
-              begin: 0.0,
-              end: 1.0,
-            ).animate(animation.drive(curveTween));
-            return FadeTransition(opacity: fadeAnimation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
+      // Replace PageRouteBuilder with custom transition extension
+      context.pushPageWithTransition(
+        page: const MainNavigation(),
+        transitionType: TransitionType.fade, // Use standard fade
+        replace: true, // Replace the splash screen
       );
     });
   }
@@ -69,6 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _loadingAnimationController.dispose();
     super.dispose();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../utils/animations.dart'; // Import AnimatedTapButton
 
 class DarkModeToggle extends StatefulWidget {
   final bool value;
@@ -9,13 +10,13 @@ class DarkModeToggle extends StatefulWidget {
   final Duration animationDuration;
 
   const DarkModeToggle({
-    Key? key,
+    super.key,
     required this.value,
     required this.onChanged,
     this.lightColor = const Color(0xFFFDB813), // Sun yellow
     this.darkColor = const Color(0xFF3F51B5), // Dark blue
     this.animationDuration = const Duration(milliseconds: 300),
-  }) : super(key: key);
+  });
 
   @override
   State<DarkModeToggle> createState() => _DarkModeToggleState();
@@ -65,10 +66,12 @@ class _DarkModeToggleState extends State<DarkModeToggle>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // Wrap the existing AnimatedBuilder with AnimatedTapButton
+    return AnimatedTapButton(
       onTap: () {
         widget.onChanged(!widget.value);
       },
+      borderRadius: BorderRadius.circular(25), // Match container's border radius
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
@@ -94,7 +97,7 @@ class _DarkModeToggleState extends State<DarkModeToggle>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withAlpha((0.2 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -139,7 +142,7 @@ class _DarkModeToggleState extends State<DarkModeToggle>
                           color: Colors.white,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withAlpha((0.2 * 255).round()),
                               blurRadius: 4,
                               offset: const Offset(0, 1),
                             ),
@@ -171,7 +174,7 @@ class _DarkModeToggleState extends State<DarkModeToggle>
             ),
           );
         },
-      ),
-    );
+      ), // End AnimatedBuilder
+    ); // End AnimatedTapButton
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/sustainability_score.dart';
 import '../theme.dart';
+import '../utils/animations.dart'; // Import AnimatedTapButton
 
 class ImprovementTipCard extends StatelessWidget {
   final SustainabilityTip tip;
@@ -14,7 +15,7 @@ class ImprovementTipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark; // Unused variable
 
     // Wrap the Card with Semantics and InkWell for tap interaction
     return Semantics(
@@ -28,8 +29,10 @@ class ImprovementTipCard extends StatelessWidget {
         margin: EdgeInsets.zero,
         clipBehavior:
             Clip.antiAlias, // Ensures InkWell ripple stays within bounds
-        child: InkWell(
-          onTap: onTap, // Use the provided onTap callback
+        // Replace InkWell with AnimatedTapButton
+        child: AnimatedTapButton(
+          onTap: onTap ?? () {}, // Use provided onTap or empty function
+          borderRadius: BorderRadius.circular(12), // Match Card's radius
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -39,7 +42,7 @@ class ImprovementTipCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: tip.getImpactColor().withOpacity(0.1),
+                    color: tip.getImpactColor().withAlpha((0.1 * 255).round()),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -78,7 +81,7 @@ class ImprovementTipCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: tip.getImpactColor().withOpacity(0.15),
+                          color: tip.getImpactColor().withAlpha((0.15 * 255).round()),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -101,15 +104,15 @@ class ImprovementTipCard extends StatelessWidget {
                       Icons.chevron_right,
                       color: AppTheme.getTextSecondaryColor(
                         context,
-                      ).withOpacity(0.6),
+                      ).withAlpha((0.6 * 255).round()),
                       size: 20,
                     ),
                   ),
               ],
             ),
           ),
-        ),
-      ),
+        ), // End Padding
+      ), // End AnimatedTapButton
     );
   }
 }

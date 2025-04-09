@@ -38,7 +38,7 @@ class HomeConfiguration {  // Home basic information
     this.meterNumber = '',
     this.hasSolarPanels = false,
     this.usesLedLighting = true,
-  }) : this.rooms =
+  }) : rooms =
            rooms ??
            [
              Room(id: '1', name: 'Living Room'),
@@ -117,7 +117,7 @@ class Room {
   // Create a copy with modified values
   Room copyWith({String? name, String? icon, String? notes}) {
     return Room(
-      id: this.id,
+      id: id,
       name: name ?? this.name,
       icon: icon ?? this.icon,
       notes: notes ?? this.notes,

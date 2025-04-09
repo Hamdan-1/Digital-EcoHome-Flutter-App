@@ -9,11 +9,11 @@ class ScoreGauge extends StatelessWidget {
   final Color scoreColor; // Color associated with the score
 
   const ScoreGauge({
-    Key? key,
+    super.key,
     required this.score,
     required this.scoreLabel,
     required this.scoreColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,7 @@ class ScoreGauge extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: scoreColor.withOpacity(0.1),
+                    color: scoreColor.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -88,7 +88,7 @@ class GaugePainter extends CustomPainter {
     // Draw the gauge background (grey track)
     final backgroundPaint =
         Paint()
-          ..color = Colors.grey.withOpacity(0.2)
+          ..color = Colors.grey.withAlpha((0.2 * 255).round())
           ..style = PaintingStyle.stroke
           ..strokeWidth = 12
           ..strokeCap = StrokeCap.round;
@@ -128,7 +128,7 @@ class GaugePainter extends CustomPainter {
   void _drawTickMarks(Canvas canvas, Offset center, double radius) {
     final tickPaint =
         Paint()
-          ..color = Colors.grey.withOpacity(0.5)
+          ..color = Colors.grey.withAlpha((0.5 * 255).round())
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1
           ..strokeCap = StrokeCap.round;

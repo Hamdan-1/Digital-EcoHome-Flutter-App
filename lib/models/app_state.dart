@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import 'data_status.dart'; // Import the new DataStatus enum
 // Add import for the AppSettings models
 import 'settings/app_settings.dart';
 import 'settings/user_preferences.dart';
@@ -10,11 +11,6 @@ import 'settings/advanced_settings.dart';
 // Import IoT simulation components
 import 'simulation/iot_simulation_controller.dart';
 import 'simulation/simulation_config.dart';
-import 'simulation/device_behavior.dart';
-import 'simulation/energy_usage_simulator.dart';
-import 'simulation/notification_system.dart';
-import 'simulation/device_discovery.dart';
-import 'simulation/persistent_storage.dart';
 import 'gamification.dart'; // Import the new gamification models
 
 class Device {
@@ -46,20 +42,15 @@ class Device {
 // New classes for specific device types
 class SmartAC extends Device {
   SmartAC({
-    required String id,
-    required String name,
-    required bool isActive,
-    required double currentUsage,
-    required String room,
+    required super.id,
+    required super.name,
+    required super.isActive,
+    required super.currentUsage,
+    required super.room,
   }) : super(
-         id: id,
-         name: name,
          type: 'HVAC',
-         isActive: isActive,
-         currentUsage: currentUsage,
          iconPath: 'ac_unit',
          maxUsage: 1800.0,
-         room: room,
          settings: {
            'temperature': 24,
            'fanSpeed': 'Medium',
@@ -71,20 +62,15 @@ class SmartAC extends Device {
 
 class SmartWashingMachine extends Device {
   SmartWashingMachine({
-    required String id,
-    required String name,
-    required bool isActive,
-    required double currentUsage,
-    required String room,
+    required super.id,
+    required super.name,
+    required super.isActive,
+    required super.currentUsage,
+    required super.room,
   }) : super(
-         id: id,
-         name: name,
          type: 'Appliance',
-         isActive: isActive,
-         currentUsage: currentUsage,
          iconPath: 'local_laundry_service',
          maxUsage: 700.0,
-         room: room,
          settings: {
            'cycle': 'Normal',
            'temperature': 'Warm',
@@ -98,20 +84,15 @@ class SmartWashingMachine extends Device {
 
 class SmartLight extends Device {
   SmartLight({
-    required String id,
-    required String name,
-    required bool isActive,
-    required double currentUsage,
-    required String room,
+    required super.id,
+    required super.name,
+    required super.isActive,
+    required super.currentUsage,
+    required super.room,
   }) : super(
-         id: id,
-         name: name,
          type: 'Light',
-         isActive: isActive,
-         currentUsage: currentUsage,
          iconPath: 'lightbulb',
          maxUsage: 60.0,
-         room: room,
          settings: {
            'brightness': 80,
            'colorTemperature': 4000,
@@ -143,6 +124,12 @@ class EnergyAlert {
 }
 
 class AppState extends ChangeNotifier {
+ // --- Demo Mode State Removed ---
+
+ // --- Navigation State ---
+ int _currentNavigationIndex = 0; // Default to Dashboard (index 0)
+
+  // --- Regular State ---
   // IoT Simulation Controller
   late IoTSimulationController _iotSimulation;
 
@@ -155,7 +142,7 @@ class AppState extends ChangeNotifier {
   List<double> _hourlyUsageData = [];
 
   // Energy cost settings
-  double _energyRate = 0.15; // $0.15 per kWh
+  final double _energyRate = 0.15; // $0.15 per kWh
 
   // Yesterday's usage for comparison
   double _yesterdayUsage = 18.7; // kWh
@@ -213,7 +200,7 @@ class AppState extends ChangeNotifier {
   ];
 
   // Sample devices data with realistic power consumption values
-  List<Device> _devices = [
+  final List<Device> _devices = [
     Device(
       id: '1',
       name: 'Air Conditioner',
@@ -308,17 +295,22 @@ class AppState extends ChangeNotifier {
 
   // Discovered but not yet added devices
   List<Device> _discoveredDevices = [];
-  bool _isScanning = false;
+  // Replace _isScanning with status enum
+  DataStatus _discoveryStatus = DataStatus.initial;
+  String? _discoveryError;
 
-  // Device settings update simulation
-  bool _isUpdatingDevice = false;
+  // Device list status
+  DataStatus _devicesStatus = DataStatus.initial;
+  String? _devicesError;
+
+  // Removed _isUpdatingDevice flag - will handle locally in UI
 
   // App settings
   AppSettings _appSettings = AppSettings();
 
   // Gamification State
   GamificationState _gamificationState = GamificationState();
-  List<Achievement> _allAchievements =
+  final List<Achievement> _allAchievements =
       _initializeAchievements(); // Define all possible achievements
 
   AppState() {
@@ -336,7 +328,8 @@ class AppState extends ChangeNotifier {
       ),
     );
 
-    // Initialize the controller
+    // Initialize the controller and set initial device loading status
+    _devicesStatus = DataStatus.loading;
     _initializeSimulation();
 
     // Calculate initial power usage based on active devices
@@ -372,26 +365,47 @@ class AppState extends ChangeNotifier {
 
   // Callback when devices are updated by the simulation
   void _handleDevicesUpdated(List<Device> updatedDevices) {
-    // Update device states from the simulation
-    for (final updatedDevice in updatedDevices) {
-      final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
-      if (index != -1) {
-        _devices[index] = updatedDevice;
+    try {
+      // Update device states from the simulation
+      // Use a map for efficient lookup if list gets very large
+      final deviceMap = {for (var d in _devices) d.id: d};
+      for (final updatedDevice in updatedDevices) {
+        if (deviceMap.containsKey(updatedDevice.id)) {
+           // Find index and update (or replace if immutable)
+           final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
+           if (index != -1) {
+              _devices[index] = updatedDevice;
+           }
+        } else {
+          // Handle case where simulation reports a device not in our list? Log warning?
+          debugPrint("AppState: Received update for unknown device ID: ${updatedDevice.id}");
+        }
       }
+
+      // Update energy usage values from simulation
+      _todayUsage = _iotSimulation.getTodayUsage();
+      _weeklyUsage = _iotSimulation.getWeeklyUsage();
+      _monthlyUsage = _iotSimulation.getMonthlyUsage();
+      _hourlyUsageData = _iotSimulation.getHourlyUsageData();
+      _yesterdayUsage = _iotSimulation.getYesterdayUsage();
+      _todayEstimatedUsage = _todayUsage; // Use actual usage as estimate
+
+      // Recalculate total power usage
+      _recalculateTotalPowerUsage();
+
+      // Update device list status
+      _devicesStatus = _devices.isEmpty ? DataStatus.empty : DataStatus.success;
+      _devicesError = null; // Clear any previous error
+
+    } catch (e, stackTrace) {
+       debugPrint("AppState: Error handling device updates: $e\n$stackTrace");
+       _devicesStatus = DataStatus.error;
+       _devicesError = "Failed to process device updates.";
+       // Optionally generate a user-facing alert as well
+       _handleAlertGenerated(EnergyAlert(message: _devicesError!, time: DateTime.now()));
+    } finally {
+       notifyListeners();
     }
-
-    // Update energy usage values from simulation
-    _todayUsage = _iotSimulation.getTodayUsage();
-    _weeklyUsage = _iotSimulation.getWeeklyUsage();
-    _monthlyUsage = _iotSimulation.getMonthlyUsage();
-    _hourlyUsageData = _iotSimulation.getHourlyUsageData();
-    _yesterdayUsage = _iotSimulation.getYesterdayUsage();
-    _todayEstimatedUsage = _todayUsage; // Use actual usage as estimate
-
-    // Recalculate total power usage
-    _recalculateTotalPowerUsage();
-
-    notifyListeners();
   }
 
   // Callback when a new alert is generated
@@ -555,17 +569,21 @@ class AppState extends ChangeNotifier {
     return _currentPowerUsage * 24 * _energyRate;
   }
 
-  // Getters
-  List<Device> get devices => _devices;
+ // Getters
+ List<Device> get devices => _devices; // Removed demo mode check
   List<Device> get discoveredDevices => _discoveredDevices;
+  DataStatus get discoveryStatus => _discoveryStatus; // Use status instead of bool
+  String? get discoveryError => _discoveryError;
+  DataStatus get devicesStatus => _devicesStatus;
+  String? get devicesError => _devicesError;
   List<String> get rooms => _rooms;
-  bool get isScanning => _isScanning;
-  bool get isUpdatingDevice => _isUpdatingDevice;
+  // Removed isUpdatingDevice getter
   double get todayUsage => _todayUsage;
   double get weeklyUsage => _weeklyUsage;
-  double get monthlyUsage => _monthlyUsage;
-  double get currentPowerUsage => _currentPowerUsage;
-  List<double> get hourlyUsageData => _hourlyUsageData;
+ double get monthlyUsage => _monthlyUsage;
+ double get currentPowerUsage => _currentPowerUsage; // Removed demo mode check
+ List<double> get hourlyUsageData => _hourlyUsageData; // Removed demo mode check
+ // Comment related to removed demo mode
   double get energyRate => _energyRate;
   double get yesterdayUsage => _yesterdayUsage;
   double get todayEstimatedUsage => _todayEstimatedUsage;
@@ -573,7 +591,8 @@ class AppState extends ChangeNotifier {
   List<EnergyAlert> get energyAlerts => _energyAlerts;
   AppSettings get appSettings => _appSettings;
   GamificationState get gamificationState => _gamificationState;
-  List<Achievement> get allAchievements => _allAchievements;
+ List<Achievement> get allAchievements => _allAchievements;
+ int get currentNavigationIndex => _currentNavigationIndex;
 
   bool isUsageLowerThanYesterday() {
     return _todayEstimatedUsage < _yesterdayUsage;
@@ -584,8 +603,8 @@ class AppState extends ChangeNotifier {
     return (difference / _yesterdayUsage) * 100;
   }
 
+  // Placeholder for potential future logic
   // Toggle device status
-  @override
   Future<void> toggleDevice(String id) async {
     final index = _devices.indexWhere((device) => device.id == id);
     if (index != -1) {
@@ -637,7 +656,7 @@ class AppState extends ChangeNotifier {
   Future<void> removeDevice(String id) async {
     final deviceIndex = _devices.indexWhere((d) => d.id == id);
     if (deviceIndex != -1) {
-      final device = _devices[deviceIndex];
+      // final device = _devices[deviceIndex]; // Unused variable removed
 
       // Simulate network latency for removing a device
       if (_iotSimulation.config.enableRealisticLatency) {
@@ -666,30 +685,44 @@ class AppState extends ChangeNotifier {
 
   // Simulate device discovery using advanced simulation
   Future<void> scanForDevices() async {
-    if (_isScanning) return;
+    // Prevent concurrent scans
+    if (_discoveryStatus == DataStatus.loading) return;
 
-    _isScanning = true;
-    _discoveredDevices = [];
+    _discoveryStatus = DataStatus.loading;
+    _discoveredDevices = []; // Clear previous results
+    _discoveryError = null; // Clear previous error
     notifyListeners();
 
     try {
-      // Use the device discovery simulator for realistic network behavior
-      final discoveredDevices = await _iotSimulation.discoverDevices(
-        _rooms.toList(),
+      // Use the device discovery simulator
+      final discovered = await _iotSimulation.discoverDevices(
+        _rooms.toList(), // Pass available rooms
       );
 
-      // Update discovered devices
-      _discoveredDevices = discoveredDevices;
-    } catch (e) {
-      // Handle discovery errors
+      _discoveredDevices = discovered;
+      // Set status based on results
+      _discoveryStatus = _discoveredDevices.isEmpty ? DataStatus.empty : DataStatus.success;
+
+    } catch (e, stackTrace) {
+      debugPrint("AppState: Device scan failed: $e\n$stackTrace");
+      _discoveryStatus = DataStatus.error;
+      // Provide a more user-friendly error message
+      _discoveryError = 'Device scan failed. Please check network connection and try again.';
+      _discoveredDevices = []; // Ensure list is empty on error
+
+      // Also generate an alert for the user
       _handleAlertGenerated(
         EnergyAlert(
-          message: 'Device scan failed: ${e.toString()}. Please try again.',
+          message: _discoveryError!,
           time: DateTime.now(),
         ),
       );
     } finally {
-      _isScanning = false;
+      // Ensure status is not loading anymore, even if an unexpected error occurred
+      if (_discoveryStatus == DataStatus.loading) {
+         _discoveryStatus = DataStatus.error; // Assume error if still loading here
+         _discoveryError = 'An unexpected error occurred during device scan.';
+      }
       notifyListeners();
     }
   }
@@ -734,37 +767,40 @@ class AppState extends ChangeNotifier {
     String id,
     Map<String, dynamic> newSettings,
   ) async {
-    _isUpdatingDevice = true;
-    notifyListeners();
+    // Note: Loading state for this action should ideally be handled locally in the UI
+    // that triggers the update (e.g., show a spinner on the specific control).
+    // This method now focuses on performing the update and returning success/failure.
 
     final deviceIndex = _devices.indexWhere((d) => d.id == id);
     if (deviceIndex != -1) {
       final device = _devices[deviceIndex];
 
-      // Use the IoT simulation controller for realistic updates with network latency and potential failures
-      bool success = await _iotSimulation.updateDeviceSettings(
-        device,
-        newSettings,
-        (updatedDevice) {
-          // Update the device in our list with the new settings
-          _devices[deviceIndex] = updatedDevice;
+      try {
+        // Use the IoT simulation controller
+        bool success = await _iotSimulation.updateDeviceSettings(
+          device,
+          newSettings,
+          (updatedDevice) {
+            // Success callback: Update the device in our list
+            _devices[deviceIndex] = updatedDevice;
+            _recalculateTotalPowerUsage(); // Recalculate usage if settings affect it
+            notifyListeners(); // Notify UI about the data change
+          },
+        );
 
-          // Recalculate total power usage
-          _recalculateTotalPowerUsage();
+        if (!success) {
+           // Handle simulation-reported failure (e.g., network error)
+           _handleAlertGenerated(EnergyAlert(message: "Failed to update settings for ${device.name}.", time: DateTime.now()));
+        }
+        return success;
 
-          notifyListeners();
-        },
-      );
-
-      _isUpdatingDevice = false;
-      notifyListeners();
-
-      return success;
+      } catch (e, stackTrace) {
+        debugPrint("AppState: Error updating device settings: $e\n$stackTrace");
+        _handleAlertGenerated(EnergyAlert(message: "Error updating settings for ${device.name}.", time: DateTime.now()));
+        return false; // Indicate failure
+      }
     }
-
-    _isUpdatingDevice = false;
-    notifyListeners();
-    return false;
+    return false; // Device not found
   }
 
   // Calculate new power usage based on settings changes
@@ -841,7 +877,7 @@ class AppState extends ChangeNotifier {
 
       if (newBrightness != null) {
         // Brightness directly affects power usage
-        final oldBrightness = device.settings!['brightness'] as int;
+        // final oldBrightness = device.settings!['brightness'] as int; // Unused variable removed
         baseUsage = (device.maxUsage * newBrightness / 100);
       }
     }
@@ -1051,7 +1087,7 @@ class AppState extends ChangeNotifier {
   // --- Gamification Logic ---
 
   void _loadGamificationState() {
-    // TODO: Load saved gamification state from persistent storage (e.g., SharedPreferences)
+    // Placeholder: Load saved gamification state from persistent storage (e.g., SharedPreferences)
     // For now, use default state.
     _gamificationState = GamificationState(
       // Example initial state
@@ -1067,7 +1103,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _saveGamificationState() {
-    // TODO: Save current gamification state to persistent storage
+    // Placeholder: Save current gamification state to persistent storage
   }
 
   static List<Achievement> _initializeAchievements() {
@@ -1295,12 +1331,12 @@ class AppState extends ChangeNotifier {
           time: DateTime.now(),
         ),
       );
-      // TODO: Add level up rewards?
+      // Placeholder: Add level up rewards?
     }
 
-    print(
-      "Points added: $pointsToAdd for $reason. Total: $newPoints",
-    ); // Debug log
+    // print(
+    //   "Points added: $pointsToAdd for $reason. Total: $newPoints",
+    // ); // Debug log removed
   }
 
   void _checkAchievements({
@@ -1390,5 +1426,19 @@ class AppState extends ChangeNotifier {
     _checkAchievements(scoreChecked: true);
   }
 
-  // --- End Gamification Logic ---
+ // --- End Gamification Logic ---
+
+ // --- Demo Mode Methods Removed ---
+
+ // --- Navigation Control ---
+
+ /// Navigates the main bottom navigation bar to the specified page index.
+ void navigateToPageIndex(int index, int pageCount) {
+   // Check if the index is valid and different from the current one.
+   if (index >= 0 && index < pageCount && index != _currentNavigationIndex) {
+     _currentNavigationIndex = index;
+     notifyListeners();
+   }
+ }
+
 }

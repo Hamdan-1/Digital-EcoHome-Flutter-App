@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/gamification.dart';
 import '../theme.dart';
-import 'package:intl/intl.dart'; // For date formatting
+// import 'package:intl/intl.dart'; // Unused import
 
 class ChallengeCard extends StatelessWidget {
   final Challenge challenge;
 
-  const ChallengeCard({Key? key, required this.challenge}) : super(key: key);
+  const ChallengeCard({super.key, required this.challenge});
 
   @override
   Widget build(BuildContext context) {

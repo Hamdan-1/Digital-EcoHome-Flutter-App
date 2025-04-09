@@ -8,9 +8,8 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
   CustomPageRoute({
     required this.page,
     this.transitionType = TransitionType.fade,
-    RouteSettings? settings,
+    super.settings,
   }) : super(
-         settings: settings,
          pageBuilder: (context, animation, secondaryAnimation) => page,
          transitionDuration: const Duration(milliseconds: 300),
          reverseTransitionDuration: const Duration(milliseconds: 250),

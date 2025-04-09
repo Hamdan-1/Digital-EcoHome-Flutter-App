@@ -9,9 +9,7 @@ import '../models/settings/device_management.dart';
 import '../models/settings/advanced_settings.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/dark_mode_toggle.dart';
-import '../models/demo_mode.dart';
-import 'demo_mode_page.dart';
-
+import 'about_page.dart'; // Import the new AboutPage
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -41,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _newRoomNameController = TextEditingController();
 
   // Device being edited (if any)
-  String? _editingDeviceId;
+  String? _editingDeviceId; // Field is used, restored
 
   @override
   void initState() {
@@ -377,6 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
         // App appearance and behavior
         _buildSectionHeader('Appearance & Behavior'),
         _buildDarkModeToggleSetting(),
+        _buildThemeSelectionSetting(), // Add the theme selection dropdown
         _buildSwitchSetting(
           title: 'Auto Update Data',
           subtitle: 'Automatically refresh device status',
@@ -632,7 +631,7 @@ class _SettingsPageState extends State<SettingsPage> {
           );
 
           return _buildDeviceListItem(device: device, settings: deviceSettings);
-        }).toList(),
+        }), // Removed unnecessary .toList()
 
         if (devices.isEmpty)
           const Padding(
@@ -675,21 +674,23 @@ class _SettingsPageState extends State<SettingsPage> {
           subtitle: 'A smart solution for home energy management',
           icon: Icons.eco,
         ),
-
-        const Divider(height: 32),
-
-        // Demo Mode section
-        _buildSectionHeader('Demo Mode'),
-        _buildButtonSetting(
-          title: 'Start Demo Mode',
-          subtitle: 'Experience a guided walkthrough with simulated scenarios',
-          icon: Icons.play_circle_filled,
+        _buildButtonSetting( // Add button to navigate to AboutPage
+          title: 'About Digital EcoHome',
+          subtitle: 'View app information and team credits',
+          icon: Icons.info_outline,
           onTap: () {
-            _launchDemoMode(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutPage()),
+            );
           },
         ),
 
-        const Divider(height: 32),
+       const Divider(height: 32),
+
+       // Demo Mode section REMOVED
+
+       // const Divider(height: 32), // Divider also removed
 
         // Tutorial section
         _buildSectionHeader('Tutorials'),
@@ -742,7 +743,7 @@ class _SettingsPageState extends State<SettingsPage> {
           final index = entry.key;
           final faq = entry.value;
           return _buildFAQItem(faq, index);
-        }).toList(),
+        }), // Removed unnecessary .toList()
 
         const Divider(height: 32),
 
@@ -794,7 +795,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.2),
+            color: Colors.amber.withAlpha((0.2 * 255).round()),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.amber),
           ),
@@ -1046,7 +1047,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(_getIconForDevice(device), color: AppTheme.primaryColor),
@@ -1268,7 +1269,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(_getIconForRoom(room), color: AppTheme.primaryColor),
@@ -1591,7 +1592,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1634,7 +1635,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1683,7 +1684,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1741,7 +1742,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1791,7 +1792,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1825,7 +1826,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryColor),
@@ -1899,10 +1900,7 @@ class _SettingsPageState extends State<SettingsPage> {
     appState.updateDeviceManagement(management);
   }
 
-  void _updateAdvancedSettings(AdvancedSettings settings) {
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.updateAdvancedSettings(settings);
-  }
+  // Removed unused method _updateAdvancedSettings
 
   // Custom dark mode toggle setting
   Widget _buildDarkModeToggleSetting() {
@@ -1915,7 +1913,7 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.dark_mode, color: AppTheme.primaryColor),
@@ -1951,16 +1949,27 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _launchDemoMode(BuildContext context) {
-    // Get the DemoMode instance
-    final demoMode = Provider.of<DemoMode>(context, listen: false);
 
-    // Start the demo
-    demoMode.startDemo();
+  // Theme selection setting
+  Widget _buildThemeSelectionSetting() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
-    // Navigate to the demo page
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const DemoModePage()));
+    return _buildDropdownSetting<String>(
+      title: 'App Theme',
+      subtitle: 'Select the application theme',
+      value: themeProvider.selectedThemeKey,
+      items: themeProvider.availableThemeKeys,
+      icon: Icons.palette,
+      onChanged: (value) {
+        if (value != null) {
+          themeProvider.setTheme(value);
+          // Optionally, update user preferences if theme is stored there too
+          // final updatedPreferences = _userPreferences.copyWith(selectedTheme: value);
+          // setState(() { _userPreferences = updatedPreferences; });
+          // _updateUserPreferences(updatedPreferences);
+        }
+      },
+    );
   }
+
 }

@@ -39,7 +39,7 @@ abstract class DeviceBehaviorSimulator {
 
 /// Simulator for HVAC devices (AC, heaters)
 class HVACBehaviorSimulator extends DeviceBehaviorSimulator {
-  HVACBehaviorSimulator(SimulationConfig config) : super(config);
+  HVACBehaviorSimulator(super.config);
   
   @override
   Future<Device> updateDeviceState(Device device) async {
@@ -49,7 +49,7 @@ class HVACBehaviorSimulator extends DeviceBehaviorSimulator {
     // Get the device settings
     final settings = device.settings ?? {};
     final targetTemp = settings['temperature'] as int? ?? 24;
-    final mode = settings['mode'] as String? ?? 'Cool';
+    // final mode = settings['mode'] as String? ?? 'Cool'; // Unused variable
     final fanSpeed = settings['fanSpeed'] as String? ?? 'Medium';
     
     // Calculate usage based on settings and time of day
@@ -183,7 +183,7 @@ class HVACBehaviorSimulator extends DeviceBehaviorSimulator {
 
 /// Simulator for Lighting devices
 class LightingBehaviorSimulator extends DeviceBehaviorSimulator {
-  LightingBehaviorSimulator(SimulationConfig config) : super(config);
+  LightingBehaviorSimulator(super.config);
   
   @override
   Future<Device> updateDeviceState(Device device) async {
@@ -269,14 +269,14 @@ class LightingBehaviorSimulator extends DeviceBehaviorSimulator {
 
 /// Simulator for Kitchen and Appliance devices
 class ApplianceBehaviorSimulator extends DeviceBehaviorSimulator {
-  ApplianceBehaviorSimulator(SimulationConfig config) : super(config);
+  ApplianceBehaviorSimulator(super.config);
   
   @override
   Future<Device> updateDeviceState(Device device) async {
     if (!device.isActive) return device;
     if (device.type != 'Appliance' && device.type != 'Kitchen') return device;
     
-    final settings = device.settings ?? {};
+    // final settings = device.settings ?? {}; // Unused variable
     double newUsage = device.currentUsage;
     
     // Different behavior based on device name

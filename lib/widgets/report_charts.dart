@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme.dart';
 import 'dart:math' as math;
+import '../utils/animations.dart'; // Import AnimatedTapButton
 
 class PieChartWidget extends StatelessWidget {
   final Map<String, double> data;
@@ -11,37 +12,46 @@ class PieChartWidget extends StatelessWidget {
   final String centerSubText;
 
   const PieChartWidget({
-    Key? key,
+    super.key,
     required this.data,
     required this.colorMap,
     this.centerRadius = 60.0,
     this.centerText = '',
     this.centerSubText = '',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Get theme for text color
+
     return AspectRatio(
       aspectRatio: 1.3,
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white,
+        color: Colors.white, // Consider using theme card color
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: PieChart(
-            PieChartData(
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  // Handle touch events if needed
-                },
-              ),
-              borderData: FlBorderData(show: false),
-              sectionsSpace: 2,
-              centerSpaceRadius: centerRadius,
-              sections: _getSections(),
-            ),
-          ),
+          child: data.isEmpty
+              ? Center(
+                  child: Text(
+                    'No data available',
+                    style: TextStyle(color: theme.disabledColor),
+                  ),
+                )
+              : PieChart(
+                  PieChartData(
+                    pieTouchData: PieTouchData(
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                        // Handle touch events if needed
+                      },
+                    ),
+                    borderData: FlBorderData(show: false),
+                    sectionsSpace: 2,
+                    centerSpaceRadius: centerRadius,
+                    sections: _getSections(),
+                  ),
+                ),
         ),
       ),
     );
@@ -101,7 +111,7 @@ class _Badge extends StatelessWidget {
         border: Border.all(color: borderColor, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha((0.1 * 255).round()),
             offset: const Offset(2, 2),
             blurRadius: 3,
           ),
@@ -129,110 +139,122 @@ class BarChartWidget extends StatelessWidget {
   final Function(int)? onBarSelected;
 
   const BarChartWidget({
-    Key? key,
+    super.key,
     required this.data,
     this.xAxisLabel = '',
     this.yAxisLabel = '',
     this.animate = true,
     this.onBarSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Get theme for text color
+
     return AspectRatio(
       aspectRatio: 1.6,
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white,
+        color: Colors.white, // Consider using theme card color
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: _getMaxY() * 1.2,
-              barTouchData: BarTouchData(
-                enabled: true,
-                touchTooltipData: BarTouchTooltipData(
-                  tooltipBgColor: Colors.blueGrey.shade800,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    return BarTooltipItem(
-                      '${data[groupIndex]['name']}\n',
-                      const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+          child: data.isEmpty
+              ? Center(
+                  child: Text(
+                    'No data available',
+                     style: TextStyle(color: theme.disabledColor),
+                  ),
+                )
+              : BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: _getMaxY() * 1.2, // Calculate maxY based on potentially empty data
+                    barTouchData: BarTouchData(
+                      enabled: true,
+                      touchTooltipData: BarTouchTooltipData(
+                        tooltipBgColor: Colors.blueGrey.shade800,
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          // Safety check for index
+                          if (groupIndex >= 0 && groupIndex < data.length) {
+                            return BarTooltipItem(
+                              '${data[groupIndex]['name']}\n',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              children: <TextSpan>[
+                                TextSpan(
+                                  text: '${rod.toY.toStringAsFixed(1)} kWh', // Use appropriate unit
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return null; // Return null if index is out of bounds
+                        },
                       ),
-                      children: <TextSpan>[
-                        TextSpan(
-                          text: '${rod.toY.toStringAsFixed(1)} kWh',
+                      touchCallback: (FlTouchEvent event, barTouchResponse) {
+                        if (event is FlTapUpEvent &&
+                            barTouchResponse != null &&
+                            barTouchResponse.spot != null &&
+                            onBarSelected != null) {
+                          onBarSelected!(barTouchResponse.spot!.touchedBarGroupIndex);
+                        }
+                      },
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: _bottomTitles,
+                          reservedSize: 42,
+                        ),
+                        axisNameWidget: Text(
+                          xAxisLabel,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 12,
                           ),
                         ),
-                      ],
-                    );
-                  },
-                ),
-                touchCallback: (FlTouchEvent event, barTouchResponse) {
-                  if (event is FlTapUpEvent &&
-                      barTouchResponse != null &&
-                      barTouchResponse.spot != null &&
-                      onBarSelected != null) {
-                    onBarSelected!(barTouchResponse.spot!.touchedBarGroupIndex);
-                  }
-                },
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: _bottomTitles,
-                    reservedSize: 42,
-                  ),
-                  axisNameWidget: Text(
-                    xAxisLabel,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 12,
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: _leftTitles,
+                        ),
+                        axisNameWidget: Text(
+                          yAxisLabel,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    getTitlesWidget: _leftTitles,
-                  ),
-                  axisNameWidget: Text(
-                    yAxisLabel,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 12,
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
+                      },
+                      horizontalInterval: _getMaxY() / 5, // Use calculated maxY
                     ),
+                    barGroups: _getBarGroups(), // Handles empty data internally now
                   ),
                 ),
-              ),
-              borderData: FlBorderData(show: false),
-              gridData: FlGridData(
-                show: true,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
-                },
-                horizontalInterval: _getMaxY() / 5,
-              ),
-              barGroups: _getBarGroups(),
-            ),
-            // Animation properties removed as they're not supported in this version
-          ),
         ),
       ),
     );
@@ -243,7 +265,7 @@ class BarChartWidget extends StatelessWidget {
     if (index >= 0 && index < data.length) {
       String title = data[index]['label'] ?? '';
       if (title.length > 10) {
-        title = title.substring(0, 8) + '...';
+        title = '${title.substring(0, 8)}...'; // Corrected interpolation
       }
       return SideTitleWidget(
         axisSide: meta.axisSide,
@@ -331,7 +353,7 @@ class LineChartWidget extends StatelessWidget {
   final bool animate;
 
   const LineChartWidget({
-    Key? key,
+    super.key,
     required this.data,
     this.gradientColors = const [AppTheme.primaryColor, Color(0xFF81C784)],
     this.xAxisLabel = '',
@@ -339,16 +361,18 @@ class LineChartWidget extends StatelessWidget {
     this.showDots = false,
     this.showAverage = false,
     this.animate = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+     final theme = Theme.of(context); // Get theme for text color
+
     return AspectRatio(
       aspectRatio: 1.6,
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white,
+        color: Colors.white, // Consider using theme card color
         child: Padding(
           padding: const EdgeInsets.only(
             top: 24,
@@ -356,10 +380,16 @@ class LineChartWidget extends StatelessWidget {
             left: 8,
             bottom: 16,
           ),
-          child: LineChart(
-            mainData(),
-            // Animation properties removed as they're not supported in this version
-          ),
+          child: data.isEmpty
+              ? Center(
+                  child: Text(
+                    'No data available',
+                     style: TextStyle(color: theme.disabledColor),
+                  ),
+                )
+              : LineChart(
+                  mainData(), // mainData() needs to handle empty data if necessary
+                ),
         ),
       ),
     );
@@ -495,7 +525,7 @@ class LineChartWidget extends StatelessWidget {
             gradient: LinearGradient(
               colors:
                   gradientColors
-                      .map((color) => color.withOpacity(0.3))
+                      .map((color) => color.withAlpha((0.3 * 255).round()))
                       .toList(),
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
@@ -549,7 +579,7 @@ class LineChartWidget extends StatelessWidget {
       return SideTitleWidget(
         axisSide: meta.axisSide,
         child: Text(
-          text.length > 5 ? text.substring(0, 3) + '..' : text,
+          text.length > 5 ? '${text.substring(0, 3)}..' : text, // Corrected interpolation
           style: const TextStyle(
             color: AppTheme.textSecondaryColor,
             fontWeight: FontWeight.bold,
@@ -727,7 +757,7 @@ class DeviceEnergyCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const DeviceEnergyCard({
-    Key? key,
+    super.key,
     required this.deviceName,
     required this.deviceType,
     required this.energyUsage,
@@ -735,7 +765,7 @@ class DeviceEnergyCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -743,9 +773,10 @@ class DeviceEnergyCard extends StatelessWidget {
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+      // Replace InkWell with AnimatedTapButton
+      child: AnimatedTapButton(
+        onTap: onTap ?? () {}, // Use provided onTap or empty function
+        borderRadius: BorderRadius.circular(12), // Match Card/InkWell radius
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -754,7 +785,7 @@ class DeviceEnergyCard extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha((0.1 * 255).round()),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 28),
