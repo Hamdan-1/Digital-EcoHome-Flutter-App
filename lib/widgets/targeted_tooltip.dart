@@ -4,22 +4,22 @@ import 'package:flutter/material.dart';
 class TargetedTooltip extends StatelessWidget {
   /// The global key of the widget to target
   final GlobalKey targetKey;
-  
+
   /// The tooltip message to display
   final String message;
-  
+
   /// Optional icon to display in the tooltip
   final IconData? icon;
-  
+
   /// Background color of the tooltip (defaults to primaryColor)
   final Color? backgroundColor;
-  
+
   /// Text color of the tooltip (defaults to white)
   final Color textColor;
-  
+
   /// Tooltip position relative to target (auto-calculated if null)
   final TargetedTooltipPosition? preferredPosition;
-  
+
   /// Callback when tooltip is dismissed
   final VoidCallback? onDismiss;
 
@@ -39,42 +39,39 @@ class TargetedTooltip extends StatelessWidget {
     // Get theme colors
     final theme = Theme.of(context);
     final bgColor = backgroundColor ?? theme.primaryColor;
-    
+
     return Positioned.fill(
       child: Stack(
         children: [
           // Semi-transparent overlay to dim the background
           GestureDetector(
             onTap: onDismiss,
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-            ),
+            child: Container(color: Colors.black.withOpacity(0.5)),
           ),
-          
+
           // The actual tooltip (positioned in overlay)
           _buildPositionedTooltip(context, bgColor),
         ],
       ),
     );
   }
-  
+
   Widget _buildPositionedTooltip(BuildContext context, Color bgColor) {
     // Try to find target widget position
-    final RenderBox? targetBox = targetKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? targetBox =
+        targetKey.currentContext?.findRenderObject() as RenderBox?;
     if (targetBox == null) {
       // If target not found, show tooltip in center
-      return Center(
-        child: _buildTooltipContent(context, bgColor),
-      );
+      return Center(child: _buildTooltipContent(context, bgColor));
     }
-    
+
     // Get target widget position in overlay
     final targetPosition = targetBox.localToGlobal(Offset.zero);
     final targetSize = targetBox.size;
-    
+
     // Get screen size
     final screenSize = MediaQuery.of(context).size;
-    
+
     // Calculate best position for tooltip
     final position = _calculateTooltipPosition(
       targetPosition: targetPosition,
@@ -83,7 +80,7 @@ class TargetedTooltip extends StatelessWidget {
       tooltipHeight: 120, // Approximate height
       tooltipWidth: 280, // Fixed width
     );
-    
+
     // Draw an arrow to point at the target
     return Stack(
       children: [
@@ -101,20 +98,23 @@ class TargetedTooltip extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Tooltip content
         Positioned(
           left: position.dx,
           top: position.dy,
           child: _buildTooltipContent(context, bgColor),
         ),
-        
+
         // Connection line from tooltip to target
         CustomPaint(
           painter: _ArrowPainter(
             start: Offset(
               position.dx + 140, // Center of tooltip
-              position.dy + (position.dy > targetPosition.dy ? 0 : 120) // Top or bottom based on position
+              position.dy +
+                  (position.dy > targetPosition.dy
+                      ? 0
+                      : 120), // Top or bottom based on position
             ),
             end: Offset(
               targetPosition.dx + targetSize.width / 2, // Center of target
@@ -126,7 +126,7 @@ class TargetedTooltip extends StatelessWidget {
       ],
     );
   }
-  
+
   Widget _buildTooltipContent(BuildContext context, Color bgColor) {
     return Container(
       width: 280,
@@ -150,13 +150,7 @@ class TargetedTooltip extends StatelessWidget {
             Icon(icon, color: textColor, size: 24),
             const SizedBox(height: 8),
           ],
-          Text(
-            message,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 16,
-            ),
-          ),
+          Text(message, style: TextStyle(color: textColor, fontSize: 16)),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
@@ -164,10 +158,7 @@ class TargetedTooltip extends StatelessWidget {
               onPressed: onDismiss,
               child: Text(
                 'GOT IT',
-                style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -175,7 +166,7 @@ class TargetedTooltip extends StatelessWidget {
       ),
     );
   }
-  
+
   Offset _calculateTooltipPosition({
     required Offset targetPosition,
     required Size targetSize,
@@ -184,26 +175,31 @@ class TargetedTooltip extends StatelessWidget {
     required double tooltipWidth,
   }) {
     // Default to centered above target
-    TargetedTooltipPosition position = preferredPosition ?? TargetedTooltipPosition.above;
-    
+    TargetedTooltipPosition position =
+        preferredPosition ?? TargetedTooltipPosition.above;
+
     // Calculate target center
     final targetCenterX = targetPosition.dx + targetSize.width / 2;
-    
+
     // Check if there's room above
-    if (position == TargetedTooltipPosition.above && targetPosition.dy < tooltipHeight + 20) {
+    if (position == TargetedTooltipPosition.above &&
+        targetPosition.dy < tooltipHeight + 20) {
       position = TargetedTooltipPosition.below;
     }
-    
+
     // Check if there's room below
-    if (position == TargetedTooltipPosition.below && 
-        targetPosition.dy + targetSize.height + tooltipHeight + 20 > screenSize.height) {
+    if (position == TargetedTooltipPosition.below &&
+        targetPosition.dy + targetSize.height + tooltipHeight + 20 >
+            screenSize.height) {
       position = TargetedTooltipPosition.above;
     }
-    
+
     // If still no good position, try left or right
-    if ((position == TargetedTooltipPosition.above && targetPosition.dy < tooltipHeight + 20) ||
-        (position == TargetedTooltipPosition.below && 
-         targetPosition.dy + targetSize.height + tooltipHeight + 20 > screenSize.height)) {
+    if ((position == TargetedTooltipPosition.above &&
+            targetPosition.dy < tooltipHeight + 20) ||
+        (position == TargetedTooltipPosition.below &&
+            targetPosition.dy + targetSize.height + tooltipHeight + 20 >
+                screenSize.height)) {
       // Try left
       if (targetCenterX > screenSize.width / 2) {
         position = TargetedTooltipPosition.left;
@@ -211,17 +207,19 @@ class TargetedTooltip extends StatelessWidget {
         position = TargetedTooltipPosition.right;
       }
     }
-    
+
     // Calculate position based on chosen direction
     switch (position) {
       case TargetedTooltipPosition.above:
         return Offset(
-          targetCenterX - (tooltipWidth / 2).clamp(0, screenSize.width - tooltipWidth),
+          targetCenterX -
+              (tooltipWidth / 2).clamp(0, screenSize.width - tooltipWidth),
           targetPosition.dy - tooltipHeight - 20,
         );
       case TargetedTooltipPosition.below:
         return Offset(
-          targetCenterX - (tooltipWidth / 2).clamp(0, screenSize.width - tooltipWidth),
+          targetCenterX -
+              (tooltipWidth / 2).clamp(0, screenSize.width - tooltipWidth),
           targetPosition.dy + targetSize.height + 20,
         );
       case TargetedTooltipPosition.left:
@@ -239,49 +237,42 @@ class TargetedTooltip extends StatelessWidget {
 }
 
 /// Enum for tooltip position relative to target
-enum TargetedTooltipPosition {
-  above,
-  below,
-  left,
-  right,
-}
+enum TargetedTooltipPosition { above, below, left, right }
 
 /// Custom painter to draw an arrow from tooltip to target
 class _ArrowPainter extends CustomPainter {
   final Offset start;
   final Offset end;
   final Color color;
-  
-  _ArrowPainter({
-    required this.start,
-    required this.end,
-    required this.color,
-  });
-  
+
+  _ArrowPainter({required this.start, required this.end, required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke;
+
     // Draw a curved line
-    final path = Path()
-      ..moveTo(start.dx, start.dy)
-      ..quadraticBezierTo(
-        (start.dx + end.dx) / 2,
-        start.dy,
-        end.dx,
-        end.dy,
-      );
-    
+    final path =
+        Path()
+          ..moveTo(start.dx, start.dy)
+          ..quadraticBezierTo(
+            (start.dx + end.dx) / 2,
+            start.dy,
+            end.dx,
+            end.dy,
+          );
+
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(_ArrowPainter oldDelegate) {
     return start != oldDelegate.start ||
-           end != oldDelegate.end ||
-           color != oldDelegate.color;
+        end != oldDelegate.end ||
+        color != oldDelegate.color;
   }
 }

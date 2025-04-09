@@ -37,7 +37,7 @@ class _UsageChartState extends State<UsageChart>
   late AnimationController _animationController;
   late Animation<double> _animation;
   int? _touchedIndex;
-  
+
   // For repaint optimization
   final _chartKey = GlobalKey();
   bool _isInView = true;
@@ -137,19 +137,20 @@ class _UsageChartState extends State<UsageChart>
       },
     );
   }
+
   // Memoized line chart data to prevent unnecessary rebuilds
   LineChartData? _memoizedData;
   List<double>? _lastData;
   double? _lastAnimation;
-  
+
   LineChartData mainData() {
     // Optimization: Only recalculate chart data if data or animation changed
-    if (_memoizedData != null && 
-        _lastData == widget.data && 
+    if (_memoizedData != null &&
+        _lastData == widget.data &&
         _lastAnimation == _animation.value) {
       return _memoizedData!;
     }
-    
+
     // Calculate max value and ensure it's never zero or too small
     double maxValue = 0.1; // Default minimum value
     if (widget.data.isNotEmpty) {
@@ -157,10 +158,10 @@ class _UsageChartState extends State<UsageChart>
       // Make sure we have a non-zero max value (using 0.1 as minimum if data is all zeros)
       maxValue = calculatedMax > 0 ? calculatedMax * 1.2 : 0.1;
     }
-      // Store current values for memoization check
+    // Store current values for memoization check
     _lastData = List.from(widget.data);
     _lastAnimation = _animation.value;
-    
+
     _memoizedData = LineChartData(
       gridData: FlGridData(
         show: widget.showAxis,
@@ -169,7 +170,10 @@ class _UsageChartState extends State<UsageChart>
         // Always ensure interval is at least 0.1
         horizontalInterval: math.max(maxValue / 4, 0.1),
         // Optimization: Reduce number of grid lines for larger datasets
-        verticalInterval: math.max(widget.data.length > 50 ? widget.data.length / 10 : 1, widget.data.length / 5),
+        verticalInterval: math.max(
+          widget.data.length > 50 ? widget.data.length / 10 : 1,
+          widget.data.length / 5,
+        ),
         getDrawingHorizontalLine: (value) {
           return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 0.5);
         },
@@ -312,11 +316,12 @@ class _UsageChartState extends State<UsageChart>
                 widget.gradientStartColor ?? widget.lineColor.withOpacity(0.3),
                 widget.gradientEndColor ?? widget.lineColor.withOpacity(0.05),
               ],
-            ),          ),
+            ),
+          ),
         ),
       ],
     );
-    
+
     // Return the created chart data to fix the "body might complete normally" error
     return _memoizedData!;
   }

@@ -284,8 +284,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Install a Smart Thermostat',
-          description:
-              'Optimize heating/cooling schedules automatically.',
+          description: 'Optimize heating/cooling schedules automatically.',
           detailedDescription:
               'Smart thermostats learn your schedule and preferences, adjusting the temperature automatically to save energy when you\'re away or asleep. Many models allow remote control via smartphone apps and provide energy usage reports. They can reduce HVAC energy consumption by 10-15% annually.',
           impact: 'Medium Impact',
@@ -299,8 +298,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Switch to LED Lighting',
-          description:
-              'LEDs use up to 75% less energy and last much longer.',
+          description: 'LEDs use up to 75% less energy and last much longer.',
           detailedDescription:
               'Light Emitting Diodes (LEDs) are highly energy-efficient compared to traditional incandescent or halogen bulbs. Replacing your home\'s most frequently used bulbs with LEDs offers quick energy savings. They also have a significantly longer lifespan, reducing replacement frequency and waste.',
           impact: 'Medium Impact',
@@ -314,8 +312,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Shift Usage Away From Peak Hours',
-          description:
-              'Run major appliances during off-peak times.',
+          description: 'Run major appliances during off-peak times.',
           detailedDescription:
               'Peak hours (usually late afternoon/early evening) are when electricity demand is highest, often relying on less efficient power plants and potentially costing more depending on your utility plan. Running large appliances like dishwashers, washing machines, and dryers during off-peak hours (e.g., overnight) reduces grid strain and can lower your bills.',
           impact: 'Medium Impact',
@@ -329,8 +326,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Perform an Energy Audit',
-          description:
-              'Identify energy waste sources in your home.',
+          description: 'Identify energy waste sources in your home.',
           detailedDescription:
               'An energy audit helps pinpoint where your home is losing energy (e.g., poor insulation, air leaks, inefficient appliances). You can hire a professional or use DIY guides and tools (like thermal cameras) to assess areas for improvement. Addressing these issues can lead to significant energy savings.',
           impact: 'High Impact',
@@ -356,8 +352,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Improve Home Insulation',
-          description:
-              'Reduce heating/cooling costs with better insulation.',
+          description: 'Reduce heating/cooling costs with better insulation.',
           detailedDescription:
               'Proper insulation in your attic, walls, floors, and crawl spaces is crucial for maintaining comfortable temperatures and reducing the workload on your HVAC system. Check insulation levels and consider adding more if needed. Sealing air leaks around windows, doors, and ductwork also significantly improves efficiency.',
           impact: 'High Impact',
@@ -368,8 +363,7 @@ class SustainabilityScore {
       tips.add(
         const SustainabilityTip(
           title: 'Install Smart Power Strips',
-          description:
-              'Eliminate phantom power draw from idle devices.',
+          description: 'Eliminate phantom power draw from idle devices.',
           detailedDescription:
               'Many electronics continue to draw power even when turned off (phantom load). Smart power strips can automatically cut power to devices that are not in use (e.g., turning off peripherals when the computer is shut down) or allow you to control outlets remotely, reducing wasted energy.',
           impact: 'Low Impact',

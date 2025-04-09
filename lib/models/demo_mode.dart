@@ -46,7 +46,7 @@ class DemoTutorialStep {
   final String instruction;
   final String targetElementId; // ID of UI element to highlight
   final IconData? icon;
-  
+
   DemoTutorialStep({
     required this.title,
     required this.instruction,
@@ -63,7 +63,8 @@ class DemoMode with ChangeNotifier {
   Timer? _scenarioTimer;
   final AppState _appState;
   bool _autoAdvance = false; // Support for auto-advancing through demo
-  int _scenarioStartTime = 0; // Keep track of when scenarios start for timed events
+  int _scenarioStartTime =
+      0; // Keep track of when scenarios start for timed events
 
   // Store original app state to restore after demo
   List<Device>? _originalDevices;
@@ -87,7 +88,7 @@ class DemoMode with ChangeNotifier {
       hint: 'Tap Next to continue or Skip Tour to exit the demo mode.',
       icon: Icons.home,
       durationInSeconds: 0, // Manual advance
-      detailedExplanation: 
+      detailedExplanation:
           'Digital EcoHome is your comprehensive solution for home energy management. '
           'This demo will walk you through key features and show you how the app can help '
           'reduce your energy consumption, save money, and make your home more environmentally friendly. '
@@ -98,7 +99,7 @@ class DemoMode with ChangeNotifier {
         'Smart device control',
         'AI-powered recommendations',
         'Sustainability scoring',
-        'Anomaly detection'
+        'Anomaly detection',
       ],
     ),
 
@@ -120,19 +121,22 @@ class DemoMode with ChangeNotifier {
       tutorialSteps: [
         DemoTutorialStep(
           title: 'Real-Time Usage',
-          instruction: 'This chart shows your power consumption updating in real-time. The spikes indicate when high-power devices turn on.',
+          instruction:
+              'This chart shows your power consumption updating in real-time. The spikes indicate when high-power devices turn on.',
           targetElementId: 'dashboard_usage_chart',
           icon: Icons.show_chart,
         ),
         DemoTutorialStep(
           title: 'Daily Summary',
-          instruction: 'Your daily energy usage is summarized here, with a comparison to your typical consumption.',
+          instruction:
+              'Your daily energy usage is summarized here, with a comparison to your typical consumption.',
           targetElementId: 'dashboard_daily_summary',
           icon: Icons.today,
         ),
         DemoTutorialStep(
           title: 'Alerts & Notifications',
-          instruction: 'Important alerts about unusual usage patterns or energy-saving opportunities appear in this section.',
+          instruction:
+              'Important alerts about unusual usage patterns or energy-saving opportunities appear in this section.',
           targetElementId: 'dashboard_alerts',
           icon: Icons.notifications,
         ),
@@ -177,13 +181,15 @@ class DemoMode with ChangeNotifier {
       tutorialSteps: [
         DemoTutorialStep(
           title: 'Device Controls',
-          instruction: 'Tap any device to view detailed information and controls. Try turning a device on/off to see how it affects energy usage.',
+          instruction:
+              'Tap any device to view detailed information and controls. Try turning a device on/off to see how it affects energy usage.',
           targetElementId: 'device_list',
           icon: Icons.touch_app,
         ),
         DemoTutorialStep(
           title: 'Energy Impact',
-          instruction: 'Each device shows its current power consumption in watts. Notice how higher-power devices have a bigger impact on your total usage.',
+          instruction:
+              'Each device shows its current power consumption in watts. Notice how higher-power devices have a bigger impact on your total usage.',
           targetElementId: 'device_energy_impact',
           icon: Icons.power,
         ),
@@ -211,7 +217,8 @@ class DemoMode with ChangeNotifier {
       tutorialSteps: [
         DemoTutorialStep(
           title: 'Smart Recommendations',
-          instruction: 'The AI assistant provides personalized suggestions based on your usage patterns and potential savings.',
+          instruction:
+              'The AI assistant provides personalized suggestions based on your usage patterns and potential savings.',
           targetElementId: 'recommendations',
           icon: Icons.psychology,
         ),
@@ -260,13 +267,15 @@ class DemoMode with ChangeNotifier {
       tutorialSteps: [
         DemoTutorialStep(
           title: 'Your Score',
-          instruction: 'This gauge shows your current sustainability score. It updates as you implement energy-saving practices.',
+          instruction:
+              'This gauge shows your current sustainability score. It updates as you implement energy-saving practices.',
           targetElementId: 'sustainability_score',
           icon: Icons.eco,
         ),
         DemoTutorialStep(
           title: 'Improvement Tips',
-          instruction: 'These personalized suggestions help you improve your score and reduce environmental impact.',
+          instruction:
+              'These personalized suggestions help you improve your score and reduce environmental impact.',
           targetElementId: 'energy_saving_tips',
           icon: Icons.lightbulb_outline,
         ),
@@ -302,11 +311,11 @@ class DemoMode with ChangeNotifier {
   int get totalSteps => _demoScenarios.length;
   DemoScenario get currentScenario => _demoScenarios[_currentStep];
   bool get autoAdvance => _autoAdvance;
-  
+
   // Setter for auto-advance
   void setAutoAdvance(bool value) {
     _autoAdvance = value;
-    
+
     // If turning on auto-advance, start the timer if not already running
     if (_autoAdvance) {
       _startAutoAdvanceTimer();
@@ -314,18 +323,18 @@ class DemoMode with ChangeNotifier {
       // If turning off auto-advance, cancel the timer
       _scenarioTimer?.cancel();
     }
-    
+
     notifyListeners();
   }
-  
+
   // Start the auto-advance timer
   void _startAutoAdvanceTimer() {
     // Cancel any existing timer
     _scenarioTimer?.cancel();
-    
+
     // Get the current scenario duration
     final duration = _demoScenarios[_currentStep].durationInSeconds;
-    
+
     // Only start timer if the scenario has a duration
     if (duration > 0) {
       _scenarioTimer = Timer(Duration(seconds: duration), () {

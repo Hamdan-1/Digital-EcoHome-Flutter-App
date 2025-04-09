@@ -13,11 +13,12 @@ class ChallengeCard extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final timeRemaining = challenge.expiryDate.difference(DateTime.now());
     final bool isExpired = timeRemaining.isNegative;
-    final String timeStr = isExpired
-        ? "Expired"
-        : (timeRemaining.inHours > 0
-            ? "${timeRemaining.inHours}h left"
-            : "${timeRemaining.inMinutes}m left");
+    final String timeStr =
+        isExpired
+            ? "Expired"
+            : (timeRemaining.inHours > 0
+                ? "${timeRemaining.inHours}h left"
+                : "${timeRemaining.inMinutes}m left");
 
     Color progressColor = AppTheme.getPrimaryColor(context);
     if (challenge.status == ChallengeStatus.completed) {
@@ -80,7 +81,10 @@ class ChallengeCard extends StatelessWidget {
                       timeStr,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isExpired ? Colors.red : AppTheme.getTextSecondaryColor(context),
+                        color:
+                            isExpired
+                                ? Colors.red
+                                : AppTheme.getTextSecondaryColor(context),
                       ),
                     ),
                   ],
@@ -94,7 +98,10 @@ class ChallengeCard extends StatelessWidget {
                   Expanded(
                     child: LinearProgressIndicator(
                       value: challenge.progress,
-                      backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                      backgroundColor:
+                          isDarkMode
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
                       valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                       minHeight: 6,
                       borderRadius: BorderRadius.circular(3),
@@ -114,12 +121,19 @@ class ChallengeCard extends StatelessWidget {
             if (challenge.status == ChallengeStatus.completed)
               Text(
                 'Completed!',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            if (challenge.status == ChallengeStatus.failed || (isExpired && challenge.status != ChallengeStatus.completed))
+            if (challenge.status == ChallengeStatus.failed ||
+                (isExpired && challenge.status != ChallengeStatus.completed))
               Text(
                 'Failed',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
           ],
         ),

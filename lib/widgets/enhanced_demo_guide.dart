@@ -33,10 +33,10 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   // Keys for targeted elements in different scenarios
   final Map<DemoState, GlobalKey> _primaryTargetKeys = {};
-  
+
   // Control whether to show targeted tooltip
   bool _showTooltip = false;
   String _tooltipMessage = '';
@@ -67,7 +67,7 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
     }
 
     _animationController.forward();
-    
+
     // Schedule tooltip to appear after card is animated in
     Future.delayed(const Duration(milliseconds: 1000), () {
       _checkAndShowTooltip();
@@ -77,16 +77,16 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
   @override
   void didUpdateWidget(EnhancedDemoGuide oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentStep != widget.currentStep || 
+    if (oldWidget.currentStep != widget.currentStep ||
         oldWidget.currentState != widget.currentState) {
       _animationController.reset();
       _animationController.forward();
-      
+
       // Hide any active tooltip
       setState(() {
         _showTooltip = false;
       });
-      
+
       // Show new tooltip after a short delay
       Future.delayed(const Duration(milliseconds: 800), () {
         _checkAndShowTooltip();
@@ -98,33 +98,38 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
     // Only show tooltips for specific states
     String? message;
     GlobalKey? targetKey;
-    
+
     switch (widget.currentState) {
       case DemoState.dashboardOverview:
-        message = 'This graph shows your real-time energy usage. Notice how it changes as devices turn on and off.';
+        message =
+            'This graph shows your real-time energy usage. Notice how it changes as devices turn on and off.';
         targetKey = _primaryTargetKeys[DemoState.dashboardOverview];
         break;
       case DemoState.energySpike:
-        message = 'The system has detected an unusual energy spike! Check the alerts section for more information.';
+        message =
+            'The system has detected an unusual energy spike! Check the alerts section for more information.';
         targetKey = _primaryTargetKeys[DemoState.energySpike];
         break;
       case DemoState.deviceControl:
-        message = 'Try turning these devices on or off to see how they affect your home\'s energy consumption.';
+        message =
+            'Try turning these devices on or off to see how they affect your home\'s energy consumption.';
         targetKey = _primaryTargetKeys[DemoState.deviceControl];
         break;
       case DemoState.smartRecommendation:
-        message = 'Our AI assistant analyzes your energy usage patterns and provides personalized recommendations.';
+        message =
+            'Our AI assistant analyzes your energy usage patterns and provides personalized recommendations.';
         targetKey = _primaryTargetKeys[DemoState.smartRecommendation];
         break;
       case DemoState.sustainabilityScore:
-        message = 'Your sustainability score improves as you implement energy-saving practices.';
+        message =
+            'Your sustainability score improves as you implement energy-saving practices.';
         targetKey = _primaryTargetKeys[DemoState.sustainabilityScore];
         break;
       default:
         // No tooltip for other states
         break;
     }
-    
+
     if (message != null && targetKey != null && mounted) {
       setState(() {
         _tooltipMessage = message!;
@@ -173,7 +178,8 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                            backgroundColor: theme.colorScheme.primary
+                                .withOpacity(0.2),
                             child: Icon(
                               widget.scenario.icon,
                               color: theme.colorScheme.primary,
@@ -204,23 +210,26 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDarkMode 
-                              ? Colors.blueGrey.shade800
-                              : Colors.blue.shade50,
+                          color:
+                              isDarkMode
+                                  ? Colors.blueGrey.shade800
+                                  : Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isDarkMode 
-                                ? Colors.blueGrey.shade700
-                                : Colors.blue.shade200,
+                            color:
+                                isDarkMode
+                                    ? Colors.blueGrey.shade700
+                                    : Colors.blue.shade200,
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.lightbulb_outline,
-                              color: isDarkMode 
-                                  ? Colors.amber.shade300
-                                  : Colors.amber.shade700,
+                              color:
+                                  isDarkMode
+                                      ? Colors.amber.shade300
+                                      : Colors.amber.shade700,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -229,9 +238,10 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
                                 widget.scenario.hint,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontStyle: FontStyle.italic,
-                                  color: isDarkMode
-                                      ? Colors.blue.shade100
-                                      : Colors.blue.shade900,
+                                  color:
+                                      isDarkMode
+                                          ? Colors.blue.shade100
+                                          : Colors.blue.shade900,
                                 ),
                               ),
                             ),
@@ -282,7 +292,9 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
                                   widget.onNext();
                                 },
                                 icon: Icon(
-                                  isLastStep ? Icons.check : Icons.arrow_forward,
+                                  isLastStep
+                                      ? Icons.check
+                                      : Icons.arrow_forward,
                                 ),
                                 label: Text(isLastStep ? 'Finish' : 'Next'),
                                 style: ElevatedButton.styleFrom(
@@ -301,7 +313,7 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
             ),
           ),
         ),
-        
+
         // Targeted tooltip overlay when active
         if (_showTooltip && _activeTooltipTargetKey != null)
           TargetedTooltip(
@@ -315,7 +327,7 @@ class _EnhancedDemoGuideState extends State<EnhancedDemoGuide>
               });
             },
           ),
-          
+
         // Expose target keys to parent
         Offstage(
           offstage: true,
@@ -356,7 +368,7 @@ class DemoFeatureHighlight extends StatelessWidget {
       children: [
         // The actual widget
         child,
-        
+
         // Highlight overlay (used during demo to draw attention)
         Positioned.fill(
           child: Container(

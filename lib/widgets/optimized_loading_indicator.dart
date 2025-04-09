@@ -5,16 +5,16 @@ import '../theme.dart';
 class OptimizedLoadingIndicator extends StatelessWidget {
   /// The size of the loading indicator
   final double size;
-  
+
   /// Optional message to show below the indicator
   final String? message;
-  
+
   /// Primary color for the loader (defaults to app primary color)
   final Color? color;
-  
+
   /// Whether to show the indicator on a semi-transparent backdrop
   final bool useBackdrop;
-  
+
   /// Duration for the animation in milliseconds
   final int animationDurationMs;
 
@@ -30,9 +30,10 @@ class OptimizedLoadingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
+    final primaryColor =
+        isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor;
     final loaderColor = color ?? primaryColor;
-    
+
     final Widget loadingContent = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -53,7 +54,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Animated progress circle
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -66,7 +67,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
                   );
                 },
               ),
-              
+
               // Optional pulse effect
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -89,7 +90,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
             ],
           ),
         ),
-        
+
         // Optional message
         if (message != null) ...[
           const SizedBox(height: 16),
@@ -104,7 +105,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
         ],
       ],
     );
-    
+
     if (useBackdrop) {
       return Container(
         color: Colors.black.withOpacity(0.3),
@@ -122,7 +123,7 @@ class OptimizedLoadingIndicator extends StatelessWidget {
         ),
       );
     }
-    
+
     return Center(child: loadingContent);
   }
 }
@@ -146,7 +147,7 @@ class OverlayLoadingIndicator extends StatelessWidget {
       children: [
         // Main content
         child,
-        
+
         // Loading overlay (conditionally shown)
         if (isLoading)
           Positioned.fill(

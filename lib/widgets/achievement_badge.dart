@@ -15,12 +15,14 @@ class AchievementBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final color = achievement.earned
-        ? AppTheme.getPrimaryColor(context)
-        : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400);
-    final bgColor = achievement.earned
-        ? color.withOpacity(0.15)
-        : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200);
+    final color =
+        achievement.earned
+            ? AppTheme.getPrimaryColor(context)
+            : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400);
+    final bgColor =
+        achievement.earned
+            ? color.withOpacity(0.15)
+            : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200);
 
     Widget badgeContent = Container(
       width: showName ? null : 50,
@@ -35,11 +37,7 @@ class AchievementBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            achievement.icon,
-            color: color,
-            size: showName ? 24 : 28,
-          ),
+          Icon(achievement.icon, color: color, size: showName ? 24 : 28),
           if (showName) ...[
             const SizedBox(height: 8),
             Text(
@@ -51,15 +49,16 @@ class AchievementBadge extends StatelessWidget {
                 color: color,
               ),
             ),
-          ]
+          ],
         ],
       ),
     );
 
     return Tooltip(
-      message: achievement.earned
-          ? "${achievement.name}\n${achievement.description}\n(+${achievement.pointsReward} pts)"
-          : "${achievement.name}\n(Locked)",
+      message:
+          achievement.earned
+              ? "${achievement.name}\n${achievement.description}\n(+${achievement.pointsReward} pts)"
+              : "${achievement.name}\n(Locked)",
       preferBelow: false,
       child: badgeContent,
     );

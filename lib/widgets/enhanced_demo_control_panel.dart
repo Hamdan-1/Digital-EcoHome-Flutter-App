@@ -30,7 +30,7 @@ class EnhancedDemoControlPanel extends StatelessWidget {
     final isLastStep = currentStep == totalSteps - 1;
     final theme = Theme.of(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Calculate progress percentage
     final progress = (currentStep / (totalSteps - 1)).clamp(0.0, 1.0);
 
@@ -57,7 +57,7 @@ class EnhancedDemoControlPanel extends StatelessWidget {
             minHeight: 4,
           ),
           const SizedBox(height: 12),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -70,7 +70,7 @@ class EnhancedDemoControlPanel extends StatelessWidget {
                   foregroundColor: theme.colorScheme.secondary,
                 ),
               ),
-              
+
               // Navigation controls
               Row(
                 children: [
@@ -80,16 +80,20 @@ class EnhancedDemoControlPanel extends StatelessWidget {
                     icon: Icon(
                       Icons.arrow_back_ios,
                       size: 20,
-                      color: isFirstStep 
-                        ? theme.disabledColor
-                        : theme.colorScheme.primary,
+                      color:
+                          isFirstStep
+                              ? theme.disabledColor
+                              : theme.colorScheme.primary,
                     ),
                     tooltip: 'Previous Step',
                   ),
-                  
+
                   // Step indicator
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       color: theme.colorScheme.primary,
@@ -102,22 +106,23 @@ class EnhancedDemoControlPanel extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Next button
                   IconButton(
                     onPressed: isLastStep ? null : onNext,
                     icon: Icon(
                       Icons.arrow_forward_ios,
                       size: 20,
-                      color: isLastStep 
-                        ? theme.disabledColor
-                        : theme.colorScheme.primary,
+                      color:
+                          isLastStep
+                              ? theme.disabledColor
+                              : theme.colorScheme.primary,
                     ),
                     tooltip: 'Next Step',
                   ),
                 ],
               ),
-              
+
               // Exit button
               TextButton.icon(
                 onPressed: onExit,
@@ -129,7 +134,7 @@ class EnhancedDemoControlPanel extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Auto-advance toggle (if enabled)
           if (allowAutoAdvance)
             Padding(

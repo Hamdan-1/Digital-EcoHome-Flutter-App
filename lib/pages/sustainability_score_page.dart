@@ -65,9 +65,12 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     final appState = Provider.of<AppState>(context);
 
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildContent(appState.gamificationState), // Pass gamification state
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildContent(
+                appState.gamificationState,
+              ), // Pass gamification state
     );
   }
 
@@ -92,19 +95,13 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
               // --- End Gamification Section ---
 
               // Contributing Factors
-              Semantics(
-                header: true,
-                child: _buildFactorsSectionHeader(),
-              ),
+              Semantics(header: true, child: _buildFactorsSectionHeader()),
               _buildFactorsList(),
 
               const SizedBox(height: 24),
 
               // Neighborhood Ranking
-              Semantics(
-                header: true,
-                child: _buildNeighborhoodSectionHeader(),
-              ),
+              Semantics(header: true, child: _buildNeighborhoodSectionHeader()),
               _buildNeighborhoodDetails(),
 
               const SizedBox(height: 24),
@@ -156,20 +153,29 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatItem(Icons.star, '${gamificationState.points} Pts', context),
-                _buildStatItem(Icons.leaderboard, 'Level ${gamificationState.calculateLevel()}', context),
+                _buildStatItem(
+                  Icons.star,
+                  '${gamificationState.points} Pts',
+                  context,
+                ),
+                _buildStatItem(
+                  Icons.leaderboard,
+                  'Level ${gamificationState.calculateLevel()}',
+                  context,
+                ),
                 StreakDisplay(streakDays: gamificationState.streakDays),
               ],
             ),
-             const SizedBox(height: 12),
+            const SizedBox(height: 12),
             Semantics(
               label: "Score calculation basis",
               child: Text(
                 'Based on your energy usage patterns and home configuration',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontSize: 12, // Smaller font
-                    color: AppTheme.getTextSecondaryColor(context)),
+                  fontSize: 12, // Smaller font
+                  color: AppTheme.getTextSecondaryColor(context),
+                ),
               ),
             ),
           ],
@@ -199,9 +205,14 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
 
   // New Section for Challenges and Achievements
   Widget _buildGamificationSection(GamificationState gamificationState) {
-    final activeChallenges = gamificationState.activeChallenges
-        .where((c) => c.status == ChallengeStatus.active && c.expiryDate.isAfter(DateTime.now()))
-        .toList();
+    final activeChallenges =
+        gamificationState.activeChallenges
+            .where(
+              (c) =>
+                  c.status == ChallengeStatus.active &&
+                  c.expiryDate.isAfter(DateTime.now()),
+            )
+            .toList();
     final earnedAchievements = gamificationState.earnedAchievements;
 
     return Column(
@@ -209,7 +220,11 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
       children: [
         // Active Challenges
         if (activeChallenges.isNotEmpty) ...[
-          _buildSectionHeader(Icons.flag_outlined, 'Active Challenges', context),
+          _buildSectionHeader(
+            Icons.flag_outlined,
+            'Active Challenges',
+            context,
+          ),
           const SizedBox(height: 12),
           ListView.builder(
             shrinkWrap: true,
@@ -223,8 +238,12 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
             },
           ),
           const SizedBox(height: 24),
-        ],        // Achievements
-        _buildSectionHeader(Icons.emoji_events_outlined, 'Achievements', context),
+        ], // Achievements
+        _buildSectionHeader(
+          Icons.emoji_events_outlined,
+          'Achievements',
+          context,
+        ),
         const SizedBox(height: 12),
         Container(
           height: 70, // Fixed height for horizontal scrolling badges
@@ -234,7 +253,9 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
             itemBuilder: (context, index) {
               final achievement = _appState.allAchievements[index];
               // Find if this achievement is earned
-              final isEarned = earnedAchievements.any((earned) => earned.id == achievement.id);
+              final isEarned = earnedAchievements.any(
+                (earned) => earned.id == achievement.id,
+              );
               return Padding(
                 padding: const EdgeInsets.only(right: 10.0),
                 child: AchievementBadge(
@@ -249,8 +270,12 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
   }
 
   // Helper for section headers
-  Widget _buildSectionHeader(IconData icon, String title, BuildContext context) {
-     return Row(
+  Widget _buildSectionHeader(
+    IconData icon,
+    String title,
+    BuildContext context,
+  ) {
+    return Row(
       children: [
         Icon(icon, color: AppTheme.getPrimaryColor(context)),
         const SizedBox(width: 8),
@@ -266,19 +291,30 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     );
   }
 
-
   // --- Existing Sections (Factors, Neighborhood, Tips) ---
   // Use the helper for headers
   Widget _buildFactorsSectionHeader() {
-    return _buildSectionHeader(Icons.architecture, 'Contributing Factors', context);
+    return _buildSectionHeader(
+      Icons.architecture,
+      'Contributing Factors',
+      context,
+    );
   }
 
   Widget _buildNeighborhoodSectionHeader() {
-    return _buildSectionHeader(Icons.location_city, 'Neighborhood Comparison', context);
+    return _buildSectionHeader(
+      Icons.location_city,
+      'Neighborhood Comparison',
+      context,
+    );
   }
 
-   Widget _buildImprovementTipsSectionHeader() {
-    return _buildSectionHeader(Icons.lightbulb_outline, 'Ways to Improve', context);
+  Widget _buildImprovementTipsSectionHeader() {
+    return _buildSectionHeader(
+      Icons.lightbulb_outline,
+      'Ways to Improve',
+      context,
+    );
   }
 
   // ... (_buildFactorsList, _buildNeighborhoodDetails, _buildImprovementTipsList, _showTipDetails remain largely the same) ...
@@ -287,12 +323,15 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Column(
-        children: _sustainabilityScore.factors.map((factor) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0), // Add space between factor cards
-            child: FactorListItem(factor: factor),
-          );
-        }).toList(),
+        children:
+            _sustainabilityScore.factors.map((factor) {
+              return Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 8.0,
+                ), // Add space between factor cards
+                child: FactorListItem(factor: factor),
+              );
+            }).toList(),
       ),
     );
   }
@@ -304,13 +343,12 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
       padding: const EdgeInsets.only(top: 16.0),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            children: [              Semantics(
+            children: [
+              Semantics(
                 label:
                     "Your home ranks ${ranking.ranking} in your neighborhood.",
                 child: RichText(
@@ -345,7 +383,7 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
                 ),
               ),
               const SizedBox(height: 12),
-              Container( /* ... existing percentile container ... */ ),
+              Container(/* ... existing percentile container ... */),
             ],
           ),
         ),
@@ -358,15 +396,16 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Column(
-        children: _sustainabilityScore.improvementTips.map((tip) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: ImprovementTipCard(
-              tip: tip,
-              onTap: () => _showTipDetails(context, tip), // onTap remains
-            ),
-          );
-        }).toList(),
+        children:
+            _sustainabilityScore.improvementTips.map((tip) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: ImprovementTipCard(
+                  tip: tip,
+                  onTap: () => _showTipDetails(context, tip), // onTap remains
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -389,7 +428,8 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
           builder: (context, scrollController) {
             return Container(
               padding: const EdgeInsets.all(20),
-              child: ListView( // Use ListView for scrollable content
+              child: ListView(
+                // Use ListView for scrollable content
                 controller: scrollController,
                 children: [
                   // Handle for dragging

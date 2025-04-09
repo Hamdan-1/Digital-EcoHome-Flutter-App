@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum ChallengeType { daily, weekly }
+
 enum ChallengeStatus { active, completed, failed }
 
 class Challenge {

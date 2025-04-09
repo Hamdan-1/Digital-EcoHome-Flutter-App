@@ -11,9 +11,10 @@ class FactorListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final scoreColor = factor.isPositive
-        ? AppTheme.getPrimaryColor(context)
-        : Colors.orange; // Or use a specific negative color
+    final scoreColor =
+        factor.isPositive
+            ? AppTheme.getPrimaryColor(context)
+            : Colors.orange; // Or use a specific negative color
 
     // Wrap the content in a Card
     return Card(
@@ -22,7 +23,8 @@ class FactorListItem extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: AppTheme.getCardColor(context),
       child: Semantics(
-        label: "${factor.name}, Score impact: ${factor.score > 0 ? '+' : ''}${factor.score.toStringAsFixed(0)}. Description: ${factor.description}",
+        label:
+            "${factor.name}, Score impact: ${factor.score > 0 ? '+' : ''}${factor.score.toStringAsFixed(0)}. Description: ${factor.description}",
         child: Padding(
           // Add internal padding to the card
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),

@@ -18,14 +18,16 @@ class ImprovementTipCard extends StatelessWidget {
 
     // Wrap the Card with Semantics and InkWell for tap interaction
     return Semantics(
-      label: "Improvement Tip: ${tip.title}. Impact: ${tip.impact}. Tap to learn more.",
+      label:
+          "Improvement Tip: ${tip.title}. Impact: ${tip.impact}. Tap to learn more.",
       button: true, // Indicate it's interactive
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: AppTheme.getCardColor(context),
         margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias, // Ensures InkWell ripple stays within bounds
+        clipBehavior:
+            Clip.antiAlias, // Ensures InkWell ripple stays within bounds
         child: InkWell(
           onTap: onTap, // Use the provided onTap callback
           child: Padding(
@@ -71,7 +73,10 @@ class ImprovementTipCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       // Impact Tag
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: tip.getImpactColor().withOpacity(0.15),
                           borderRadius: BorderRadius.circular(6),
@@ -94,7 +99,9 @@ class ImprovementTipCard extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 8.0),
                     child: Icon(
                       Icons.chevron_right,
-                      color: AppTheme.getTextSecondaryColor(context).withOpacity(0.6),
+                      color: AppTheme.getTextSecondaryColor(
+                        context,
+                      ).withOpacity(0.6),
                       size: 20,
                     ),
                   ),

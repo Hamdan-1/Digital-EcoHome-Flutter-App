@@ -9,7 +9,8 @@ class StreakDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasStreak = streakDays > 0;
-    final Color color = hasStreak ? Colors.orange : AppTheme.getTextSecondaryColor(context);
+    final Color color =
+        hasStreak ? Colors.orange : AppTheme.getTextSecondaryColor(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

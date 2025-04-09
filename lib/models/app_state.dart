@@ -318,7 +318,8 @@ class AppState extends ChangeNotifier {
 
   // Gamification State
   GamificationState _gamificationState = GamificationState();
-  List<Achievement> _allAchievements = _initializeAchievements(); // Define all possible achievements
+  List<Achievement> _allAchievements =
+      _initializeAchievements(); // Define all possible achievements
 
   AppState() {
     // Initialize the IoT simulation controller with custom configuration
@@ -602,7 +603,9 @@ class AppState extends ChangeNotifier {
         notifyListeners();
 
         // Gamification: Award points for turning OFF a high-usage device
-        if (wasActive && !updatedDevice.isActive && updatedDevice.maxUsage > 500) {
+        if (wasActive &&
+            !updatedDevice.isActive &&
+            updatedDevice.maxUsage > 500) {
           _addPoints(5, "Turned off ${updatedDevice.name}");
         }
         // Gamification: Penalty for turning ON during peak hours? (Optional)
@@ -1055,7 +1058,11 @@ class AppState extends ChangeNotifier {
       points: 120,
       streakDays: 3,
       lastStreakUpdate: DateTime.now().subtract(Duration(days: 1)),
-      earnedAchievements: _allAchievements.where((a) => a.id == 'first_login').map((a) => a.copyWith(earned: true)).toList(),
+      earnedAchievements:
+          _allAchievements
+              .where((a) => a.id == 'first_login')
+              .map((a) => a.copyWith(earned: true))
+              .toList(),
     );
   }
 
@@ -1065,16 +1072,76 @@ class AppState extends ChangeNotifier {
 
   static List<Achievement> _initializeAchievements() {
     return const [
-      Achievement(id: 'first_login', name: 'Welcome Aboard!', description: 'Logged in for the first time.', icon: Icons.door_front_door, pointsReward: 50),
-      Achievement(id: 'first_score', name: 'Score Explorer', description: 'Checked your sustainability score.', icon: Icons.insights, pointsReward: 20),
-      Achievement(id: 'streak_3', name: 'Getting Started', description: 'Maintained a 3-day saving streak.', icon: Icons.local_fire_department, pointsReward: 100),
-      Achievement(id: 'streak_7', name: 'Consistent Saver', description: 'Maintained a 7-day saving streak.', icon: Icons.whatshot, pointsReward: 250),
-      Achievement(id: 'challenge_1', name: 'Challenge Accepted', description: 'Completed your first challenge.', icon: Icons.flag, pointsReward: 75),
-      Achievement(id: 'challenge_5', name: 'Challenge Master', description: 'Completed 5 challenges.', icon: Icons.emoji_events, pointsReward: 300),
-      Achievement(id: 'solar_user', name: 'Solar Powered', description: 'Using solar panels.', icon: Icons.wb_sunny, pointsReward: 500),
-      Achievement(id: 'led_user', name: 'LED Illuminator', description: 'Using LED lighting.', icon: Icons.lightbulb, pointsReward: 150),
-      Achievement(id: 'thermostat_user', name: 'Climate Controller', description: 'Using a smart thermostat.', icon: Icons.thermostat, pointsReward: 200),
-      Achievement(id: 'off_peak_hero', name: 'Off-Peak Hero', description: 'Significantly reduced peak hour usage.', icon: Icons.access_time_filled, pointsReward: 250),
+      Achievement(
+        id: 'first_login',
+        name: 'Welcome Aboard!',
+        description: 'Logged in for the first time.',
+        icon: Icons.door_front_door,
+        pointsReward: 50,
+      ),
+      Achievement(
+        id: 'first_score',
+        name: 'Score Explorer',
+        description: 'Checked your sustainability score.',
+        icon: Icons.insights,
+        pointsReward: 20,
+      ),
+      Achievement(
+        id: 'streak_3',
+        name: 'Getting Started',
+        description: 'Maintained a 3-day saving streak.',
+        icon: Icons.local_fire_department,
+        pointsReward: 100,
+      ),
+      Achievement(
+        id: 'streak_7',
+        name: 'Consistent Saver',
+        description: 'Maintained a 7-day saving streak.',
+        icon: Icons.whatshot,
+        pointsReward: 250,
+      ),
+      Achievement(
+        id: 'challenge_1',
+        name: 'Challenge Accepted',
+        description: 'Completed your first challenge.',
+        icon: Icons.flag,
+        pointsReward: 75,
+      ),
+      Achievement(
+        id: 'challenge_5',
+        name: 'Challenge Master',
+        description: 'Completed 5 challenges.',
+        icon: Icons.emoji_events,
+        pointsReward: 300,
+      ),
+      Achievement(
+        id: 'solar_user',
+        name: 'Solar Powered',
+        description: 'Using solar panels.',
+        icon: Icons.wb_sunny,
+        pointsReward: 500,
+      ),
+      Achievement(
+        id: 'led_user',
+        name: 'LED Illuminator',
+        description: 'Using LED lighting.',
+        icon: Icons.lightbulb,
+        pointsReward: 150,
+      ),
+      Achievement(
+        id: 'thermostat_user',
+        name: 'Climate Controller',
+        description: 'Using a smart thermostat.',
+        icon: Icons.thermostat,
+        pointsReward: 200,
+      ),
+      Achievement(
+        id: 'off_peak_hero',
+        name: 'Off-Peak Hero',
+        description: 'Significantly reduced peak hour usage.',
+        icon: Icons.access_time_filled,
+        pointsReward: 250,
+      ),
     ];
   }
 
@@ -1105,7 +1172,9 @@ class AppState extends ChangeNotifier {
           unit: '%',
         ),
       ];
-      _gamificationState = _gamificationState.copyWith(activeChallenges: challenges);
+      _gamificationState = _gamificationState.copyWith(
+        activeChallenges: challenges,
+      );
     }
   }
 
@@ -1126,14 +1195,21 @@ class AppState extends ChangeNotifier {
     final lastUpdate = _gamificationState.lastStreakUpdate;
 
     if (lastUpdate == null || now.difference(lastUpdate).inDays >= 1) {
-      bool streakContinued = _yesterdayUsage < 25.0; // Example: Streak continues if yesterday < 25 kWh
+      bool streakContinued =
+          _yesterdayUsage <
+          25.0; // Example: Streak continues if yesterday < 25 kWh
 
       int currentStreak = _gamificationState.streakDays;
-      DateTime newLastUpdate = DateTime(now.year, now.month, now.day); // Mark today as updated
+      DateTime newLastUpdate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ); // Mark today as updated
 
       if (streakContinued) {
         // If it's been exactly one day since last update, increment streak
-        if (lastUpdate != null && newLastUpdate.difference(lastUpdate).inDays == 1) {
+        if (lastUpdate != null &&
+            newLastUpdate.difference(lastUpdate).inDays == 1) {
           currentStreak++;
         } else {
           // Otherwise, start a new streak of 1 day
@@ -1141,7 +1217,8 @@ class AppState extends ChangeNotifier {
         }
       } else {
         // If streak condition not met, reset streak unless it was already updated today
-        if (lastUpdate == null || newLastUpdate.difference(lastUpdate).inDays >= 1) {
+        if (lastUpdate == null ||
+            newLastUpdate.difference(lastUpdate).inDays >= 1) {
           currentStreak = 0;
         }
       }
@@ -1154,7 +1231,9 @@ class AppState extends ChangeNotifier {
   }
 
   void _updateChallengeProgress() {
-    List<Challenge> updatedChallenges = List.from(_gamificationState.activeChallenges);
+    List<Challenge> updatedChallenges = List.from(
+      _gamificationState.activeChallenges,
+    );
     bool challengesChanged = false;
 
     for (int i = 0; i < updatedChallenges.length; i++) {
@@ -1185,14 +1264,18 @@ class AppState extends ChangeNotifier {
           challenge.status = ChallengeStatus.completed;
           _addPoints(challenge.pointsReward, "Challenge: ${challenge.title}");
           challengesChanged = true;
-          _checkAchievements(challengeCompleted: true); // Check if completing this triggers an achievement
+          _checkAchievements(
+            challengeCompleted: true,
+          ); // Check if completing this triggers an achievement
         }
         updatedChallenges[i] = challenge; // Update the list
       }
     }
 
     if (challengesChanged) {
-      _gamificationState = _gamificationState.copyWith(activeChallenges: updatedChallenges);
+      _gamificationState = _gamificationState.copyWith(
+        activeChallenges: updatedChallenges,
+      );
       // Optionally, generate new challenges to replace completed/failed ones
       // _generateNewChallengesIfNeeded();
     }
@@ -1206,18 +1289,27 @@ class AppState extends ChangeNotifier {
 
     // Handle level up
     if (newLevel > currentLevel) {
-      _handleAlertGenerated(EnergyAlert(
-        message: "Level Up! You reached Level $newLevel!",
-        time: DateTime.now(),
-      ));
+      _handleAlertGenerated(
+        EnergyAlert(
+          message: "Level Up! You reached Level $newLevel!",
+          time: DateTime.now(),
+        ),
+      );
       // TODO: Add level up rewards?
     }
 
-    print("Points added: $pointsToAdd for $reason. Total: $newPoints"); // Debug log
+    print(
+      "Points added: $pointsToAdd for $reason. Total: $newPoints",
+    ); // Debug log
   }
 
-  void _checkAchievements({bool scoreChecked = false, bool challengeCompleted = false}) {
-    List<Achievement> currentlyEarned = List.from(_gamificationState.earnedAchievements);
+  void _checkAchievements({
+    bool scoreChecked = false,
+    bool challengeCompleted = false,
+  }) {
+    List<Achievement> currentlyEarned = List.from(
+      _gamificationState.earnedAchievements,
+    );
     bool achievementEarned = false;
 
     for (Achievement achievement in _allAchievements) {
@@ -1240,10 +1332,19 @@ class AppState extends ChangeNotifier {
           break;
         case 'challenge_1':
           // Earned when the first challenge is completed
-          earnedNow = challengeCompleted && _gamificationState.activeChallenges.where((c) => c.status == ChallengeStatus.completed).length == 1;
+          earnedNow =
+              challengeCompleted &&
+              _gamificationState.activeChallenges
+                      .where((c) => c.status == ChallengeStatus.completed)
+                      .length ==
+                  1;
           break;
         case 'challenge_5':
-          earnedNow = _gamificationState.activeChallenges.where((c) => c.status == ChallengeStatus.completed).length >= 5;
+          earnedNow =
+              _gamificationState.activeChallenges
+                  .where((c) => c.status == ChallengeStatus.completed)
+                  .length >=
+              5;
           break;
         case 'solar_user':
           earnedNow = hasSolarPanels();
@@ -1255,24 +1356,32 @@ class AppState extends ChangeNotifier {
           earnedNow = hasSmartThermostat();
           break;
         case 'off_peak_hero':
-          earnedNow = calculatePeakHourUsagePercent() < 20.0; // Example threshold
+          earnedNow =
+              calculatePeakHourUsagePercent() < 20.0; // Example threshold
           break;
         // Add cases for other achievements
       }
 
       if (earnedNow) {
         currentlyEarned.add(achievement.copyWith(earned: true));
-        _addPoints(achievement.pointsReward, "Achievement: ${achievement.name}");
-        _handleAlertGenerated(EnergyAlert(
-          message: "Achievement Unlocked: ${achievement.name}!",
-          time: DateTime.now(),
-        ));
+        _addPoints(
+          achievement.pointsReward,
+          "Achievement: ${achievement.name}",
+        );
+        _handleAlertGenerated(
+          EnergyAlert(
+            message: "Achievement Unlocked: ${achievement.name}!",
+            time: DateTime.now(),
+          ),
+        );
         achievementEarned = true;
       }
     }
 
     if (achievementEarned) {
-      _gamificationState = _gamificationState.copyWith(earnedAchievements: currentlyEarned);
+      _gamificationState = _gamificationState.copyWith(
+        earnedAchievements: currentlyEarned,
+      );
     }
   }
 

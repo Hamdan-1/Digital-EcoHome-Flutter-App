@@ -15,24 +15,27 @@ class ErrorHandler {
     bool showNotification = true,
   }) {
     // Log the error (would typically send to a logging service in production)
-    debugPrint('Error: $message ${technicalDetails != null ? '($technicalDetails)' : ''}');
-    
+    debugPrint(
+      'Error: $message ${technicalDetails != null ? '($technicalDetails)' : ''}',
+    );
+
     // Show in-app notification for non-critical errors
     if (showNotification) {
       try {
         final notificationService = Provider.of<InAppNotificationService>(
-          context, 
+          context,
           listen: false,
         );
-        
+
         notificationService.showNotification(
           title: _getErrorTitle(severity),
           message: message,
           type: _getNotificationType(severity),
           duration: _getNotificationDuration(severity),
-          action: onRetry != null 
-              ? NotificationAction(label: 'Retry', onPressed: onRetry)
-              : null,
+          action:
+              onRetry != null
+                  ? NotificationAction(label: 'Retry', onPressed: onRetry)
+                  : null,
         );
       } catch (e) {
         // Fallback if the notification service isn't available
@@ -40,7 +43,7 @@ class ErrorHandler {
       }
     }
   }
-  
+
   /// Show a fullscreen error when content can't be loaded
   static Widget buildErrorDisplay({
     required String message,
@@ -54,29 +57,24 @@ class ErrorHandler {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            icon ?? const Icon(
-              Icons.error_outline,
-              size: 60,
-              color: Colors.orangeAccent,
-            ),
+            icon ??
+                const Icon(
+                  Icons.error_outline,
+                  size: 60,
+                  color: Colors.orangeAccent,
+                ),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             if (technicalDetails != null) ...[
               const SizedBox(height: 8),
               Text(
                 technicalDetails,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
             if (onRetry != null) ...[
@@ -92,7 +90,7 @@ class ErrorHandler {
       ),
     );
   }
-  
+
   /// Widget to handle loading, errors, and empty states
   static Widget buildAsyncContentHandler<T>({
     required AsyncSnapshot<T> snapshot,
@@ -105,18 +103,19 @@ class ErrorHandler {
   }) {
     // Handle loading state
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return loadingWidget ?? Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(loadingMessage),
-          ],
-        ),
-      );
+      return loadingWidget ??
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(loadingMessage),
+              ],
+            ),
+          );
     }
-    
+
     // Handle error state
     if (snapshot.hasError) {
       return buildErrorDisplay(
@@ -125,24 +124,20 @@ class ErrorHandler {
         onRetry: onRetry,
       );
     }
-    
+
     // Handle empty data
     if (!snapshot.hasData || snapshot.data == null) {
       return buildErrorDisplay(
         message: emptyMessage,
-        icon: const Icon(
-          Icons.inbox,
-          size: 60,
-          color: Colors.grey,
-        ),
+        icon: const Icon(Icons.inbox, size: 60, color: Colors.grey),
         onRetry: onRetry,
       );
     }
-    
+
     // Data is available, build the content
     return builder(snapshot.data as T);
   }
-  
+
   // Helper methods
   static String _getErrorTitle(ErrorSeverity severity) {
     switch (severity) {
@@ -156,7 +151,7 @@ class ErrorHandler {
         return 'Critical Error';
     }
   }
-  
+
   static NotificationType _getNotificationType(ErrorSeverity severity) {
     switch (severity) {
       case ErrorSeverity.low:
@@ -168,7 +163,7 @@ class ErrorHandler {
         return NotificationType.error;
     }
   }
-  
+
   static Duration _getNotificationDuration(ErrorSeverity severity) {
     switch (severity) {
       case ErrorSeverity.low:
@@ -181,7 +176,7 @@ class ErrorHandler {
         return const Duration(seconds: 10);
     }
   }
-  
+
   static void _showFallbackError(
     BuildContext context,
     String message,
@@ -189,11 +184,11 @@ class ErrorHandler {
     VoidCallback? onRetry,
   ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     Color backgroundColor;
     Color textColor = isDarkMode ? Colors.white : Colors.white;
     IconData icon;
-    
+
     switch (severity) {
       case ErrorSeverity.low:
         backgroundColor = Colors.blue;
@@ -212,40 +207,33 @@ class ErrorHandler {
         icon = Icons.dangerous;
         break;
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(icon, color: textColor),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(color: textColor),
-              ),
-            ),
+            Expanded(child: Text(message, style: TextStyle(color: textColor))),
           ],
         ),
         backgroundColor: backgroundColor,
         duration: _getNotificationDuration(severity),
-        action: onRetry != null ? SnackBarAction(
-          label: 'RETRY',
-          textColor: textColor,
-          onPressed: onRetry,
-        ) : null,
+        action:
+            onRetry != null
+                ? SnackBarAction(
+                  label: 'RETRY',
+                  textColor: textColor,
+                  onPressed: onRetry,
+                )
+                : null,
       ),
     );
   }
 }
 
 /// Enum representing error severity levels
-enum ErrorSeverity {
-  low,
-  medium, 
-  high,
-  critical,
-}
+enum ErrorSeverity { low, medium, high, critical }
 
 /// Extension to add the notification service functionality
 /// (Add this if your NotificationService doesn't have these methods yet)
@@ -263,20 +251,12 @@ extension InAppNotificationServiceExtension on InAppNotificationService {
 }
 
 /// Notification types for in-app alerts
-enum NotificationType {
-  info,
-  success,
-  warning,
-  error,
-}
+enum NotificationType { info, success, warning, error }
 
 /// Action for notifications
 class NotificationAction {
   final String label;
   final VoidCallback onPressed;
-  
-  const NotificationAction({
-    required this.label,
-    required this.onPressed,
-  });
+
+  const NotificationAction({required this.label, required this.onPressed});
 }
