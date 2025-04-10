@@ -42,8 +42,7 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: primaryColor,
       secondary: secondaryColor,
-      background: backgroundColor,
-      surface: Colors.white,
+      surface: backgroundColor, // Replaced deprecated 'background'
     ),
     scaffoldBackgroundColor: backgroundColor,
     appBarTheme: const AppBarTheme(
@@ -88,8 +87,7 @@ class AppTheme {
     colorScheme: ColorScheme.dark(
       primary: darkPrimaryColor,
       secondary: darkSecondaryColor,
-      background: darkBackgroundColor,
-      surface: darkCardColor,
+      surface: darkBackgroundColor, // Replaced deprecated 'background'
       onSurface: darkTextPrimaryColor,
     ),
     scaffoldBackgroundColor: darkBackgroundColor,

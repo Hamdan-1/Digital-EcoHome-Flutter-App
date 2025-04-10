@@ -13,13 +13,11 @@ class AppThemes {
     colorScheme: ColorScheme.light(
       primary: Colors.blue[600]!,
       secondary: Colors.cyan[600]!,
-      surface: Colors.white,
-      background: Colors.lightBlue[50]!,
+      surface: Colors.lightBlue[50]!, // Replaced deprecated 'background'
       error: Colors.redAccent,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
-      onSurface: Colors.black87,
-      onBackground: Colors.black87,
+      onSurface: Colors.black87, // Replaced deprecated 'onBackground'
       onError: Colors.white,
     ),
     cardTheme: CardTheme(
@@ -45,13 +43,11 @@ class AppThemes {
     colorScheme: ColorScheme.dark(
       primary: Colors.blue[300]!,
       secondary: Colors.cyan[300]!,
-      surface: Colors.blueGrey[800]!,
-      background: Colors.blueGrey[900]!,
+      surface: Colors.blueGrey[900]!, // Replaced deprecated 'background'
       error: Colors.redAccent[100]!,
       onPrimary: Colors.black,
       onSecondary: Colors.black,
-      onSurface: Colors.white,
-      onBackground: Colors.white,
+      onSurface: Colors.white, // Replaced deprecated 'onBackground'
       onError: Colors.black,
     ),
     cardTheme: CardTheme(
@@ -77,13 +73,12 @@ class AppThemes {
     colorScheme: ColorScheme.light(
       primary: Colors.green[700]!,
       secondary: Colors.brown[400]!,
-      surface: Colors.white,
-      background: Colors.lightGreen[50]!,
+      surface: Colors.lightGreen[50]!, // Replaced deprecated 'background'
       error: Colors.redAccent,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: Colors.black87,
-      onBackground: Colors.black87,
+      // 'onSurface' already had the correct value from deprecated 'onBackground'
       onError: Colors.white,
     ),
     cardTheme: CardTheme(
@@ -109,13 +104,12 @@ class AppThemes {
     colorScheme: ColorScheme.dark(
       primary: Colors.green[300]!,
       secondary: Colors.brown[300]!,
-      surface: Color(0xFF2C3E31), // Slightly lighter dark green-ish grey
-      background: Color(0xFF1B2E1F),
+      surface: Color(0xFF1B2E1F), // Replaced deprecated 'background'
       error: Colors.redAccent[100]!,
       onPrimary: Colors.black,
       onSecondary: Colors.black,
       onSurface: Colors.white,
-      onBackground: Colors.white,
+      // Removed deprecated 'onBackground', 'onSurface' already had the correct value
       onError: Colors.black,
     ),
     cardTheme: CardTheme(
@@ -141,13 +135,12 @@ class AppThemes {
     colorScheme: ColorScheme.light(
       primary: Colors.deepOrange[500]!,
       secondary: Colors.amber[700]!,
-      surface: Colors.white,
-      background: Colors.orange[50]!,
+      surface: Colors.orange[50]!, // Replaced deprecated 'background'
       error: Colors.redAccent,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
       onSurface: Colors.black87,
-      onBackground: Colors.black87,
+      // 'onSurface' already had the correct value from deprecated 'onBackground'
       onError: Colors.white,
     ),
     cardTheme: CardTheme(
@@ -173,13 +166,12 @@ class AppThemes {
     colorScheme: ColorScheme.dark(
       primary: Colors.orange[300]!,
       secondary: Colors.amber[300]!,
-      surface: Color(0xFF4E342E), // Slightly lighter dark brown
-      background: Color(0xFF3E2723),
+      surface: Color(0xFF3E2723), // Replaced deprecated 'background'
       error: Colors.redAccent[100]!,
       onPrimary: Colors.black,
       onSecondary: Colors.black,
       onSurface: Colors.white,
-      onBackground: Colors.white,
+      // 'onSurface' already had the correct value from deprecated 'onBackground'
       onError: Colors.black,
     ),
     cardTheme: CardTheme(
@@ -207,13 +199,12 @@ class AppThemes {
     colorScheme: ColorScheme.light(
       primary: Colors.deepPurple[500]!,
       secondary: Colors.pinkAccent[100]!,
-      surface: Colors.white,
-      background: Colors.purple[50]!,
+      surface: Colors.purple[50]!, // Replaced deprecated 'background'
       error: Colors.redAccent,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
       onSurface: Colors.black87,
-      onBackground: Colors.black87,
+      // 'onSurface' already had the correct value from deprecated 'onBackground'
       onError: Colors.white,
     ),
     cardTheme: CardTheme(
@@ -240,13 +231,12 @@ class AppThemes {
     colorScheme: ColorScheme.dark(
       primary: Colors.purple[300]!,
       secondary: Colors.pinkAccent[200]!, // Adjusted for dark mode visibility
-      surface: Color(0xFF3E2C3F), // Slightly lighter dark purple-ish grey
-      background: Color(0xFF2C1B2E),
+      surface: Color(0xFF2C1B2E), // Replaced deprecated 'background'
       error: Colors.redAccent[100]!,
       onPrimary: Colors.black,
       onSecondary: Colors.black,
       onSurface: Colors.white,
-      onBackground: Colors.white,
+      // 'onSurface' already had the correct value from deprecated 'onBackground'
       onError: Colors.black,
     ),
     cardTheme: CardTheme(

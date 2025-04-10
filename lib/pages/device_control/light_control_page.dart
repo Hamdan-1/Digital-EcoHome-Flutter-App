@@ -30,42 +30,42 @@ class _LightControlPageState extends State<LightControlPage> {
       'icon': Icons.lightbulb_outline,
       'brightness': 80,
       'colorTemp': 4000,
-      'color': Colors.white, // TODO: Map to theme color if needed
+      'color': Colors.white,
     },
     {
       'name': 'Reading',
       'icon': Icons.book,
       'brightness': 100,
       'colorTemp': 5000,
-      'color': Colors.white, // TODO: Map to theme color if needed
+      'color': Colors.white,
     },
     {
       'name': 'Relaxing',
       'icon': Icons.spa,
       'brightness': 40,
       'colorTemp': 2700,
-      'color': const Color(0xFFFFF4E5), // TODO: Map to theme color (Warm White)
+      'color': const Color(0xFFFFF4E5), // Warm White
     },
     {
       'name': 'Movie',
       'icon': Icons.movie,
       'brightness': 20,
       'colorTemp': 3000,
-      'color': const Color(0xFFFFE0C0), // TODO: Map to theme color (Dim Warm)
+      'color': const Color(0xFFFFE0C0), // Dim Warm
     },
     {
       'name': 'Party',
       'icon': Icons.celebration,
       'brightness': 85,
       'colorTemp': 4500,
-      'color': Colors.deepPurpleAccent, // TODO: Map to theme color (e.g., secondary variant)
+      'color': Colors.deepPurpleAccent, // Party Color
     },
     {
       'name': 'Focus',
       'icon': Icons.psychology,
       'brightness': 90,
       'colorTemp': 5500,
-      'color': const Color(0xFFE0F4FF), // TODO: Map to theme color (Cool White)
+      'color': const Color(0xFFE0F4FF), // Cool White
     },
   ];
 

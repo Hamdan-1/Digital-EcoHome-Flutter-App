@@ -39,7 +39,6 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _newRoomNameController = TextEditingController();
 
   // Device being edited (if any)
-  String? _editingDeviceId; // Field is used, restored
 
   @override
   void initState() {
@@ -1062,9 +1061,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
-          setState(() {
-            _editingDeviceId = device.id;
-          });
+          // The _editingDeviceId field was unused and has been removed.
+          // The state update here is no longer necessary.
           _showEditDeviceDialog(context, device, settings);
         },
       ),
@@ -1151,7 +1149,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               value: room.id,
                               child: Text(room.name),
                             );
-                          }).toList(),
+                          }), // Removed unnecessary .toList()
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -1471,7 +1469,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder:
           (context) => Dialog(
-            child: Container(
+            child: SizedBox( // Replaced Container with SizedBox to satisfy sized_box_for_whitespace lint
               width: double.maxFinite,
               height: 400,
               child: Column(

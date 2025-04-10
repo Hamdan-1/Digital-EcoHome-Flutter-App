@@ -12,6 +12,7 @@ import '../widgets/challenge_card.dart'; // Import new widgets
 import '../widgets/achievement_badge.dart';
 import '../widgets/streak_display.dart';
 import '../widgets/optimized_loading_indicator.dart';
+import '../widgets/tip_detail_dialog.dart'; // Import the new dialog
 import '../utils/error_handler.dart';
 
 class SustainabilityScorePage extends StatefulWidget {
@@ -441,7 +442,16 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ImprovementTipCard(
                   tip: tip,
-                  onTap: () => _showTipDetails(context, tip), // onTap remains
+                  onTap: () { // Updated onTap to use showDialog
+                    showDialog(
+                      context: context,
+                      // barrierDismissible: false, // Optional: Prevent closing by tapping outside
+                      builder: (BuildContext dialogContext) {
+                        // Use dialogContext to avoid issues if the main context changes during async operations before showing the dialog
+                        return TipDetailDialog(tip: tip);
+                      },
+                    );
+                  },
                 ),
               );
             }).toList(),
@@ -449,84 +459,5 @@ class _SustainabilityScorePageState extends State<SustainabilityScorePage> {
     );
   }
 
-  // _showTipDetails remains the same as previous step
-  void _showTipDetails(BuildContext context, SustainabilityTip tip) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true, // Allows sheet to take more height
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: Theme.of(context).cardColor,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.5, // Start at half screen height
-          minChildSize: 0.3, // Minimum height
-          maxChildSize: 0.8, // Maximum height
-          builder: (context, scrollController) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: ListView(
-                // Use ListView for scrollable content
-                controller: scrollController,
-                children: [
-                  // Handle for dragging
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 15),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).dividerColor, // Use theme color
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  // Tip Title and Icon
-                  Row(
-                    children: [
-                      Icon(tip.icon, color: tip.getImpactColor(), size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          tip.title,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.getTextPrimaryColor(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Impact Level
-                  Text(
-                    tip.impact,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: tip.getImpactColor(),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const Divider(height: 24),
-                  // Detailed Description
-                  Text(
-                    tip.detailedDescription,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppTheme.getTextSecondaryColor(context),
-                      height: 1.4, // Improve readability
-                    ),
-                  ),
-                  const SizedBox(height: 20), // Bottom padding
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  // Removed _showTipDetails method as it's replaced by TipDetailDialog
 }

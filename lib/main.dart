@@ -57,11 +57,14 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     // Initialize theme from saved preferences
+    // Get the provider instance *before* the async gap
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    // Initialize theme in a microtask
     Future.microtask(
       () {
-        if (!context.mounted) return;
-        Provider.of<ThemeProvider>(context, listen: false).initializeTheme();
-      },
+        // No need to check context.mounted here as context is not used
+        themeProvider.initializeTheme();
+      }
     );
   }
 

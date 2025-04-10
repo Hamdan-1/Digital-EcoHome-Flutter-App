@@ -645,13 +645,13 @@ class EnergyComparisionWidget extends StatelessWidget {
   final String unit;
 
   const EnergyComparisionWidget({
-    Key? key,
+    super.key, // Use super parameters
     required this.currentValue,
     required this.previousValue,
     this.currentLabel = 'Current',
     this.previousLabel = 'Previous',
     this.unit = 'kWh',
-  }) : super(key: key);
+  }); // Removed super(key: key)
 
   @override
   Widget build(BuildContext context) {

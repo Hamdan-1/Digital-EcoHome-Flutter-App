@@ -32,7 +32,6 @@ class _ReportsPageState extends State<ReportsPage>
   // Report data
   late List<EnergyReportData> _reportData;
   late Map<String, Color> _categoryColorMap;
-  int _selectedDataPointIndex = -1; // Field is used, restored again
 
   // Tips and alerts
   late List<EnergySavingTip> _energySavingTips;
@@ -725,9 +724,7 @@ class _ReportsPageState extends State<ReportsPage>
             yAxisLabel: 'kWh',
             onBarSelected: (index) {
               // Handle bar selection
-              setState(() {
-                _selectedDataPointIndex = index;
-              });
+              // Bar selection callback exists, but no action is currently taken.
             },
           ),
 
@@ -758,7 +755,7 @@ class _ReportsPageState extends State<ReportsPage>
               _categoryColorMap[entry.key] ?? Theme.of(context).disabledColor, // Use theme color
               devicesInCategory,
             );
-          }).toList(), // Re-added .toList()
+          }), // Removed unnecessary .toList()
         ],
       ),
     );
@@ -828,7 +825,7 @@ class _ReportsPageState extends State<ReportsPage>
                   color: device.color,
                 ),
               )
-              .toList(), // .toList() is necessary when spreading .map() result
+              , // Removed unnecessary .toList()
 
           const SizedBox(height: 24),
 
@@ -958,7 +955,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                 ),
               )
-              .toList(), // .toList() is necessary when spreading .map() result
+              , // Removed unnecessary .toList()
 
           const SizedBox(height: 16),
 
