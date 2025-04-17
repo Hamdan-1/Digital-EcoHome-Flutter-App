@@ -27,7 +27,7 @@ void main() {
 
   // OpenRouter API key for AI chat
   const String openRouterApiKey =
-      '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';
+      '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';
 
   runApp(
     MultiProvider(
@@ -60,12 +60,10 @@ class _MyAppState extends State<MyApp> {
     // Get the provider instance *before* the async gap
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     // Initialize theme in a microtask
-    Future.microtask(
-      () {
-        // No need to check context.mounted here as context is not used
-        themeProvider.initializeTheme();
-      }
-    );
+    Future.microtask(() {
+      // No need to check context.mounted here as context is not used
+      themeProvider.initializeTheme();
+    });
   }
 
   @override
@@ -189,7 +187,11 @@ class _MainNavigationState extends State<MainNavigation>
     final isDarkMode = themeProvider.isDarkMode;
 
     // final primaryColor = isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor; // Keep reference for L273/274
-    final primaryColorRef = isDarkMode ? AppTheme.darkPrimaryColor : AppTheme.primaryColor; // Use a different name to avoid conflict if primaryColor is reintroduced later
+    final primaryColorRef =
+        isDarkMode
+            ? AppTheme.darkPrimaryColor
+            : AppTheme
+                .primaryColor; // Use a different name to avoid conflict if primaryColor is reintroduced later
     final backgroundColor = isDarkMode ? AppTheme.darkCardColor : Colors.white;
     final shadowColor =
         isDarkMode
@@ -245,8 +247,18 @@ class _MainNavigationState extends State<MainNavigation>
                   const SizedBox(width: 8), // Leading padding
                   _buildNavItem(0, 'Home', Icons.home, primaryColorRef),
                   _buildNavItem(1, 'Devices', Icons.devices, primaryColorRef),
-                  _buildNavItem(2, 'Chat', Icons.chat_bubble_outline, primaryColorRef),
-                  _buildNavItem(3, 'Reports', Icons.insert_chart, primaryColorRef),
+                  _buildNavItem(
+                    2,
+                    'Chat',
+                    Icons.chat_bubble_outline,
+                    primaryColorRef,
+                  ),
+                  _buildNavItem(
+                    3,
+                    'Reports',
+                    Icons.insert_chart,
+                    primaryColorRef,
+                  ),
                   _buildNavItem(4, 'Settings', Icons.settings, primaryColorRef),
                   _buildNavItem(5, 'Score', Icons.eco, primaryColorRef),
                   const SizedBox(width: 8), // Trailing padding
@@ -259,7 +271,12 @@ class _MainNavigationState extends State<MainNavigation>
     );
   }
 
-  Widget _buildNavItem(int index, String label, IconData icon, Color selectedBaseColor) {
+  Widget _buildNavItem(
+    int index,
+    String label,
+    IconData icon,
+    Color selectedBaseColor,
+  ) {
     // Read current index from AppState to determine selection
     final currentIndex =
         Provider.of<AppState>(context, listen: false).currentNavigationIndex;

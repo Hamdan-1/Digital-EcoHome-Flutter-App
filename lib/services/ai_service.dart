@@ -7,12 +7,10 @@ class AiService {
 
   // Default system prompt focused on energy conservation and eco-home assistance
   static const String defaultSystemPrompt = '''
-You are EcoAssistant, an AI assistant specialized in smart home energy conservation and sustainability.
-Your purpose is to help users reduce their energy consumption, adopt more sustainable habits, and optimize their home's energy efficiency.
-You provide practical, actionable advice tailored to the user's specific situation and devices.
-Always be helpful, concise, and focus on realistic, impactful recommendations.
-Whenever possible, quantify potential energy and cost savings to motivate users.
-Keep responses friendly but direct, prioritizing information that leads to meaningful energy conservation.
+You are EcoAssistant, an AI for smart home energy efficiency.
+Provide concise, actionable tips to reduce energy use and costs.
+Include approximate savings when possible.
+Keep responses clear and to the point.
 ''';
 
   AiService({required String apiKey})
@@ -102,16 +100,11 @@ Keep responses friendly but direct, prioritizing information that leads to meani
     List<String> deviceTypes,
     int count,
   ) {
-    return '''
-Based on the following energy usage data and devices, provide exactly $count specific, practical energy-saving recommendations:
-
+    return '''List $count concise, actionable energy-saving tips based on:
 Usage Data:
 ${usageData.entries.map((e) => '- ${e.key}: ${e.value}').join('\n')}
-
 Devices:
 ${deviceTypes.map((d) => '- $d').join('\n')}
-
-Format each recommendation as a single, actionable item. Keep recommendations concise and specific to the user's situation.
 ''';
   }
 
@@ -133,28 +126,12 @@ Format each recommendation as a single, actionable item. Keep recommendations co
     Map<String, dynamic> currentUsage,
     List<String> implementedRecommendations,
   ) {
-    return '''
-Calculate potential energy savings for a home with the following current energy usage:
+    return '''Estimate energy savings given current usage and measures.
+Current Usage:
 ${currentUsage.entries.map((e) => '- ${e.key}: ${e.value}').join('\n')}
-
-The user has already implemented these energy-saving measures:
+Implemented Measures:
 ${implementedRecommendations.map((r) => '- $r').join('\n')}
-
-Provide conservative estimates of:
-1. Monthly energy savings (kWh)
-2. Monthly cost savings (\$)
-3. Annual energy savings (kWh)
-4. Annual cost savings (\$)
-5. CO2 emissions reduction (kg)
-
-Format your response in JSON like this:
-{
-  "monthlySavingsKwh": number,
-  "monthlySavingsCost": number,
-  "annualSavingsKwh": number,
-  "annualSavingsCost": number,
-  "co2ReductionKg": number
-}
+Return JSON: {"monthlySavingsKwh":#,"monthlySavingsCost":#,"annualSavingsKwh":#,"annualSavingsCost":#,"co2ReductionKg":#}
 ''';
   }
 
