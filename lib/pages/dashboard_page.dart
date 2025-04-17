@@ -86,8 +86,8 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ],
               ),
-             actions: [
-               // Demo Mode Activation Button Removed
+              actions: [
+                // Demo Mode Activation Button Removed
                 NotificationBadge(
                   child: IconButton(
                     icon: Icon(
@@ -134,9 +134,9 @@ class _DashboardPageState extends State<DashboardPage>
             // Energy Overview Card
             SliverToBoxAdapter(
               child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              // KeyedSubtree removed
-              child: _buildEnergyOverviewCard(appState),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                // KeyedSubtree removed
+                child: _buildEnergyOverviewCard(appState),
               ),
             ),
 
@@ -155,16 +155,35 @@ class _DashboardPageState extends State<DashboardPage>
                         color: AppTheme.getTextPrimaryColor(context),
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        'See All',
-                        style: TextStyle(
-                          // Ensure sufficient contrast for TextButton, potentially using secondary color if primary fails
-                          color: AppTheme.getSecondaryColor(context), // Or a dedicated theme color
-                          fontWeight: FontWeight.bold, // Increase weight for better visibility
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            appState.ecoMode ? Icons.eco : Icons.eco_outlined,
+                            color:
+                                appState.ecoMode
+                                    ? Colors.green
+                                    : AppTheme.getSecondaryColor(context),
+                          ),
+                          tooltip:
+                              appState.ecoMode
+                                  ? 'Eco Mode On'
+                                  : 'Enable Eco Mode',
+                          onPressed: () {
+                            appState.toggleEcoMode();
+                          },
                         ),
-                      ),
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            'See All',
+                            style: TextStyle(
+                              color: AppTheme.getSecondaryColor(context),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -175,7 +194,10 @@ class _DashboardPageState extends State<DashboardPage>
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 140, // Keep height for layout consistency
-                child: _buildDeviceStatusSection(context, appState), // Use new wrapper method
+                child: _buildDeviceStatusSection(
+                  context,
+                  appState,
+                ), // Use new wrapper method
               ),
             ),
 
@@ -196,15 +218,15 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(height: 16),
 
-                  // Energy Tip of the Day Card
-                  // KeyedSubtree removed
-                  _buildEnergyTipCard(appState),
+                    // Energy Tip of the Day Card
+                    // KeyedSubtree removed
+                    _buildEnergyTipCard(appState),
 
                     const SizedBox(height: 16),
 
-                  // Usage Comparison Card
-                  // KeyedSubtree removed
-                  _buildUsageComparisonCard(appState),
+                    // Usage Comparison Card
+                    // KeyedSubtree removed
+                    _buildUsageComparisonCard(appState),
 
                     const SizedBox(height: 16),
 
@@ -273,7 +295,11 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.bolt, color: AppTheme.darkTextPrimaryColor, size: 16),
+                      Icon(
+                        Icons.bolt,
+                        color: AppTheme.darkTextPrimaryColor,
+                        size: 16,
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Live',
@@ -312,7 +338,9 @@ class _DashboardPageState extends State<DashboardPage>
                             isDarkMode
                                 ? [
                                   Shadow(
-                                    color: Colors.black.withAlpha((0.3 * 255).round()),
+                                    color: Colors.black.withAlpha(
+                                      (0.3 * 255).round(),
+                                    ),
                                     offset: const Offset(0, 2),
                                     blurRadius: 4,
                                   ),
@@ -327,7 +355,9 @@ class _DashboardPageState extends State<DashboardPage>
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w300,
-                          color: AppTheme.darkTextPrimaryColor.withAlpha((0.9 * 255).round()),
+                          color: AppTheme.darkTextPrimaryColor.withAlpha(
+                            (0.9 * 255).round(),
+                          ),
                         ),
                       ),
                     ),
@@ -347,8 +377,12 @@ class _DashboardPageState extends State<DashboardPage>
                 data: appState.hourlyUsageData,
                 maxHeight: 80,
                 lineColor: AppTheme.darkTextPrimaryColor,
-                gradientStartColor: AppTheme.darkTextPrimaryColor.withAlpha((0.5 * 255).round()),
-                gradientEndColor: AppTheme.darkTextPrimaryColor.withAlpha((0.0 * 255).round()),
+                gradientStartColor: AppTheme.darkTextPrimaryColor.withAlpha(
+                  (0.5 * 255).round(),
+                ),
+                gradientEndColor: AppTheme.darkTextPrimaryColor.withAlpha(
+                  (0.0 * 255).round(),
+                ),
               ),
             ),
 
@@ -362,21 +396,27 @@ class _DashboardPageState extends State<DashboardPage>
                   '24h ago',
                   style: TextStyle(
                     fontSize: 14, // Increased size
-                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
+                    color: AppTheme.darkTextPrimaryColor.withAlpha(
+                      (isDarkMode ? 0.9 : 0.7 * 255).round(),
+                    ),
                   ),
                 ),
                 Text(
                   '12h ago',
                   style: TextStyle(
                     fontSize: 14, // Increased size
-                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
+                    color: AppTheme.darkTextPrimaryColor.withAlpha(
+                      (isDarkMode ? 0.9 : 0.7 * 255).round(),
+                    ),
                   ),
                 ),
                 Text(
                   'Now',
                   style: TextStyle(
                     fontSize: 14, // Increased size
-                    color: AppTheme.darkTextPrimaryColor.withAlpha((isDarkMode ? 0.9 : 0.7 * 255).round()),
+                    color: AppTheme.darkTextPrimaryColor.withAlpha(
+                      (isDarkMode ? 0.9 : 0.7 * 255).round(),
+                    ),
                   ),
                 ),
               ],
@@ -407,7 +447,9 @@ class _DashboardPageState extends State<DashboardPage>
                             isDarkMode
                                 ? [
                                   Shadow(
-                                    color: Colors.black.withAlpha((0.5 * 255).round()),
+                                    color: Colors.black.withAlpha(
+                                      (0.5 * 255).round(),
+                                    ),
                                     offset: const Offset(0, 1),
                                     blurRadius: 2,
                                   ),
@@ -425,7 +467,9 @@ class _DashboardPageState extends State<DashboardPage>
                               isDarkMode
                                   ? [
                                     Shadow(
-                                      color: Colors.black.withAlpha((0.5 * 255).round()),
+                                      color: Colors.black.withAlpha(
+                                        (0.5 * 255).round(),
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 2,
                                     ),
@@ -452,7 +496,9 @@ class _DashboardPageState extends State<DashboardPage>
                               isDarkMode
                                   ? [
                                     Shadow(
-                                      color: Colors.black.withAlpha((0.5 * 255).round()),
+                                      color: Colors.black.withAlpha(
+                                        (0.5 * 255).round(),
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 2,
                                     ),
@@ -485,19 +531,25 @@ class _DashboardPageState extends State<DashboardPage>
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
               appState.devicesError ?? 'Could not load devices',
-              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
         );
       case DataStatus.empty:
-         // Show an empty state message for the horizontal list
+        // Show an empty state message for the horizontal list
         return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
               'No devices added yet.',
-              style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).disabledColor,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -510,34 +562,37 @@ class _DashboardPageState extends State<DashboardPage>
 
   // Builds the actual horizontal list view when data is available
   Widget _buildDeviceStatusList(BuildContext context, AppState appState) {
-     // Take only the first 5 devices for the quick access list
-     final quickAccessDevices = appState.devices.take(5).toList();
+    // Take only the first 5 devices for the quick access list
+    final quickAccessDevices = appState.devices.take(5).toList();
 
-     if (quickAccessDevices.isEmpty) {
-        // This case should technically be covered by DataStatus.empty,
-        // but added as a safeguard or if filtering logic changes.
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              'No devices to display.',
-              style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 12),
-              textAlign: TextAlign.center,
+    if (quickAccessDevices.isEmpty) {
+      // This case should technically be covered by DataStatus.empty,
+      // but added as a safeguard or if filtering logic changes.
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'No devices to display.',
+            style: TextStyle(
+              color: Theme.of(context).disabledColor,
+              fontSize: 12,
             ),
+            textAlign: TextAlign.center,
           ),
-        );
-     }
+        ),
+      );
+    }
 
-     return ListView.builder(
-       scrollDirection: Axis.horizontal,
-       padding: const EdgeInsets.symmetric(horizontal: 16),
-       itemCount: quickAccessDevices.length,
-       itemBuilder: (context, index) {
-         final device = quickAccessDevices[index];
-         // Pass context to the card builder if needed for theming inside it
-         return _buildDeviceStatusCard(context, device, appState);
-       },
-     );
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: quickAccessDevices.length,
+      itemBuilder: (context, index) {
+        final device = quickAccessDevices[index];
+        // Pass context to the card builder if needed for theming inside it
+        return _buildDeviceStatusCard(context, device, appState);
+      },
+    );
   }
 
   Widget _buildDeviceStatusCard(
@@ -545,9 +600,7 @@ class _DashboardPageState extends State<DashboardPage>
     Device device,
     AppState appState,
   ) {
-    // final isDarkMode = Theme.of(context).brightness == Brightness.dark; // Unused variable
     final primaryColor = AppTheme.getPrimaryColor(context);
-
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: Card(
@@ -556,9 +609,7 @@ class _DashboardPageState extends State<DashboardPage>
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Add haptic feedback for better user experience
             HapticFeedback.lightImpact();
-            // Navigate to device detail page in the future
           },
           child: Container(
             width: 140,
@@ -569,28 +620,39 @@ class _DashboardPageState extends State<DashboardPage>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Animated icon that pulses slightly when device is active
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      child: Icon(
-                        _getIconForDevice(device.iconPath),
-                        color:
-                            device.isActive
-                                ? primaryColor
-                                : AppTheme.getTextSecondaryColor(context), // Use theme color for inactive state
-                        size: device.isActive ? 26 : 24,
-                      ),
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          child: Icon(
+                            _getIconForDevice(device.iconPath),
+                            color:
+                                device.isActive
+                                    ? primaryColor
+                                    : AppTheme.getTextSecondaryColor(context),
+                            size: device.isActive ? 26 : 24,
+                          ),
+                        ),
+                        if (device.ecoMode)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Icon(
+                              Icons.eco,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                          ),
+                      ],
                     ),
                     Switch(
                       value: device.isActive,
                       onChanged: (_) {
-                        // Add haptic feedback for better user experience
                         HapticFeedback.selectionClick();
                         appState.toggleDevice(device.id);
                       },
                       activeColor: primaryColor,
-                      // Remove shrinkWrap to ensure default minimum touch target size (48x48)
-                      // materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],
                 ),
@@ -619,11 +681,16 @@ class _DashboardPageState extends State<DashboardPage>
                       device.isActive ? '${value.toStringAsFixed(0)} W' : 'Off',
                       style: TextStyle(
                         fontSize: 12,
-                        color: device.isActive
-                            // Use a color with better contrast for active state, e.g., secondary text color
-                            ? AppTheme.getTextSecondaryColor(context)
-                            : AppTheme.getTextSecondaryColor(context),
-                        fontWeight: device.isActive ? FontWeight.bold : FontWeight.normal, // Keep bold only when active
+                        color:
+                            device.isActive
+                                // Use a color with better contrast for active state, e.g., secondary text color
+                                ? AppTheme.getTextSecondaryColor(context)
+                                : AppTheme.getTextSecondaryColor(context),
+                        fontWeight:
+                            device.isActive
+                                ? FontWeight.bold
+                                : FontWeight
+                                    .normal, // Keep bold only when active
                       ),
                     );
                   },
@@ -651,7 +718,10 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb, color: AppTheme.getSecondaryColor(context)), // Use theme color
+                Icon(
+                  Icons.lightbulb,
+                  color: AppTheme.getSecondaryColor(context),
+                ), // Use theme color
                 const SizedBox(width: 8),
                 Text(
                   'Energy Tip of the Day',
@@ -729,16 +799,27 @@ class _DashboardPageState extends State<DashboardPage>
                 color:
                     isDarkMode
                         ? (isLower
-                            ? AppTheme.getSuccessColor(context).withAlpha((0.3 * 255).round()) // Use theme color
-                            : AppTheme.getErrorColor(context).withAlpha((0.3 * 255).round())) // Use theme color
+                            ? AppTheme.getSuccessColor(context).withAlpha(
+                              (0.3 * 255).round(),
+                            ) // Use theme color
+                            : AppTheme.getErrorColor(
+                              context,
+                            ).withAlpha((0.3 * 255).round())) // Use theme color
                         : (isLower
-                            ? AppTheme.getSuccessColor(context).withAlpha((0.1 * 255).round()) // Use theme color
-                            : AppTheme.getErrorColor(context).withAlpha((0.1 * 255).round())), // Use theme color
+                            ? AppTheme.getSuccessColor(context).withAlpha(
+                              (0.1 * 255).round(),
+                            ) // Use theme color
+                            : AppTheme.getErrorColor(context).withAlpha(
+                              (0.1 * 255).round(),
+                            )), // Use theme color
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 isLower ? Icons.trending_down : Icons.trending_up,
-                color: isLower ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
+                color:
+                    isLower
+                        ? AppTheme.getSuccessColor(context)
+                        : AppTheme.getErrorColor(context), // Use theme colors
                 size: 30,
               ),
             ),
@@ -766,7 +847,12 @@ class _DashboardPageState extends State<DashboardPage>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isLower ? AppTheme.getSuccessColor(context) : AppTheme.getErrorColor(context), // Use theme colors
+                            color:
+                                isLower
+                                    ? AppTheme.getSuccessColor(context)
+                                    : AppTheme.getErrorColor(
+                                      context,
+                                    ), // Use theme colors
                           ),
                         ),
                         TextSpan(
@@ -813,7 +899,10 @@ class _DashboardPageState extends State<DashboardPage>
       children: [
         Row(
           children: [
-            Icon(Icons.notifications, color: AppTheme.getSecondaryColor(context)), // Use theme color
+            Icon(
+              Icons.notifications,
+              color: AppTheme.getSecondaryColor(context),
+            ), // Use theme color
             const SizedBox(width: 8),
             Text(
               'Alerts',
@@ -840,11 +929,22 @@ class _DashboardPageState extends State<DashboardPage>
               color:
                   isDarkMode
                       ? (alert.isRead
-                          ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()) // Use theme color
-                          : Theme.of(context).colorScheme.errorContainer.withAlpha((0.4 * 255).round())) // Use theme color (e.g., error container for unread)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withAlpha((0.5 * 255).round()) // Use theme color
+                          : Theme.of(
+                            context,
+                          ).colorScheme.errorContainer.withAlpha(
+                            (0.4 * 255).round(),
+                          )) // Use theme color (e.g., error container for unread)
                       : (alert.isRead
-                          ? Theme.of(context).colorScheme.surfaceContainerHighest // Use theme color
-                          : AppTheme.getSecondaryColor(context).withAlpha((0.1 * 255).round())), // Use theme color (e.g., secondary accent for unread)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest // Use theme color
+                          : AppTheme.getSecondaryColor(context).withAlpha(
+                            (0.1 * 255).round(),
+                          )), // Use theme color (e.g., secondary accent for unread)
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -872,7 +972,9 @@ class _DashboardPageState extends State<DashboardPage>
                         : IconButton(
                           icon: Icon(
                             Icons.check_circle_outline,
-                            color: AppTheme.getSecondaryColor(context), // Use theme color consistently
+                            color: AppTheme.getSecondaryColor(
+                              context,
+                            ), // Use theme color consistently
                           ),
                           onPressed: () => appState.markAlertAsRead(index),
                         ),
@@ -948,7 +1050,8 @@ class _DashboardPageState extends State<DashboardPage>
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha((0.3 * 255).round()), // Use theme color
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withAlpha((0.3 * 255).round()), // Use theme color
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

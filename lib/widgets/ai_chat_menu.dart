@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../pages/chat_history_page.dart';
 import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
 import '../widgets/optimized_loading_indicator.dart'; // Import OptimizedLoadingIndicator
@@ -10,6 +13,18 @@ class ChatMessage {
 
   ChatMessage({required this.text, required this.isUser, DateTime? timestamp})
     : timestamp = timestamp ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'isUser': isUser,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+    text: json['text'] as String,
+    isUser: json['isUser'] as bool,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+  );
 }
 
 class AiChatMenu extends StatefulWidget {
@@ -100,6 +115,36 @@ class _AiChatMenuState extends State<AiChatMenu>
     });
   }
 
+  Future<void> _saveSession() async {
+    if (_messages.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final sessions = prefs.getStringList('chat_sessions') ?? [];
+    final sessionJson = jsonEncode(_messages.map((m) => m.toJson()).toList());
+    sessions.add(sessionJson);
+    // keep only latest 5
+    if (sessions.length > 5) {
+      sessions.removeAt(0);
+    }
+    await prefs.setStringList('chat_sessions', sessions);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Chat session saved')));
+  }
+
+  Future<void> _openHistory() async {
+    final result = await Navigator.push<List<ChatMessage>>(
+      context,
+      MaterialPageRoute(builder: (_) => const ChatHistoryPage()),
+    );
+    if (result != null) {
+      setState(() {
+        _messages.clear();
+        _messages.addAll(result);
+      });
+      _scrollToBottom();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -111,6 +156,16 @@ class _AiChatMenuState extends State<AiChatMenu>
       appBar: AppBar(
         title: const Text('EcoAssistant AI Chat'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'View chat history',
+            onPressed: _openHistory,
+          ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            tooltip: 'Save current chat',
+            onPressed: _saveSession,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Clear chat history',
@@ -247,7 +302,8 @@ class _AiChatMenuState extends State<AiChatMenu>
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         onPressed: () {
                           _handleSubmitted(suggestion, aiService);
                         },
@@ -281,7 +337,10 @@ class _AiChatMenuState extends State<AiChatMenu>
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha((0.5 * 255).round()), // Corrected alpha calculation
+                      fillColor: theme.colorScheme.surfaceContainerHighest
+                          .withAlpha(
+                            (0.5 * 255).round(),
+                          ), // Corrected alpha calculation
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
                         vertical: 10.0,
@@ -298,7 +357,9 @@ class _AiChatMenuState extends State<AiChatMenu>
                     color:
                         _isComposing
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withAlpha((0.5 * 255).round()),
+                            : theme.colorScheme.onSurface.withAlpha(
+                              (0.5 * 255).round(),
+                            ),
                     onPressed:
                         _isComposing
                             ? () => _handleSubmitted(
@@ -345,8 +406,12 @@ class _AiChatMenuState extends State<AiChatMenu>
               decoration: BoxDecoration(
                 color:
                     isUser
-                        ? theme.colorScheme.primary.withAlpha((0.1 * 255).round())
-                        : theme.colorScheme.secondaryContainer.withAlpha((0.3 * 255).round()),
+                        ? theme.colorScheme.primary.withAlpha(
+                          (0.1 * 255).round(),
+                        )
+                        : theme.colorScheme.secondaryContainer.withAlpha(
+                          (0.3 * 255).round(),
+                        ),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16.0),
                   topRight: const Radius.circular(16.0),
@@ -370,7 +435,9 @@ class _AiChatMenuState extends State<AiChatMenu>
                   Text(
                     _formatTimestamp(message.timestamp),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withAlpha((0.6 * 255).round()),
+                      color: theme.colorScheme.onSurface.withAlpha(
+                        (0.6 * 255).round(),
+                      ),
                       fontSize: 10.0,
                     ),
                   ),

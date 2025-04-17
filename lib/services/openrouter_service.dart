@@ -12,7 +12,7 @@ class OpenRouterService {
     required String prompt,
     String model = 'meta-llama/llama-3.2-1b-instruct',
     String systemPrompt = '',
-    int maxTokens = 500,
+    int maxTokens = 300,
     double temperature = 0.7,
   }) async {
     try {
@@ -59,7 +59,7 @@ class OpenRouterService {
     required String prompt,
     String model = 'meta-llama/llama-3.2-1b-instruct',
     String systemPrompt = '',
-    int maxTokens = 500,
+    int maxTokens = 300,
     double temperature = 0.7,
   }) async {
     try {

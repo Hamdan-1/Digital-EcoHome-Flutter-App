@@ -24,6 +24,7 @@ class Device {
   final double maxUsage; // Maximum wattage when device is active
   final String room; // Added room information
   final Map<String, dynamic>? settings; // For storing device-specific settings
+  bool ecoMode; // Indicates if device is in Eco Mode
 
   Device({
     required this.id,
@@ -35,6 +36,7 @@ class Device {
     required this.maxUsage,
     this.room = 'Unknown',
     this.settings,
+    this.ecoMode = false, // Default to not in Eco Mode
     List<double>? usageHistory,
   }) : usageHistory = usageHistory ?? List.generate(24, (_) => 0.0);
 }
@@ -124,10 +126,10 @@ class EnergyAlert {
 }
 
 class AppState extends ChangeNotifier {
- // --- Demo Mode State Removed ---
+  // --- Demo Mode State Removed ---
 
- // --- Navigation State ---
- int _currentNavigationIndex = 0; // Default to Dashboard (index 0)
+  // --- Navigation State ---
+  int _currentNavigationIndex = 0; // Default to Dashboard (index 0)
 
   // --- Regular State ---
   // IoT Simulation Controller
@@ -371,14 +373,16 @@ class AppState extends ChangeNotifier {
       final deviceMap = {for (var d in _devices) d.id: d};
       for (final updatedDevice in updatedDevices) {
         if (deviceMap.containsKey(updatedDevice.id)) {
-           // Find index and update (or replace if immutable)
-           final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
-           if (index != -1) {
-              _devices[index] = updatedDevice;
-           }
+          // Find index and update (or replace if immutable)
+          final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
+          if (index != -1) {
+            _devices[index] = updatedDevice;
+          }
         } else {
           // Handle case where simulation reports a device not in our list? Log warning?
-          debugPrint("AppState: Received update for unknown device ID: ${updatedDevice.id}");
+          debugPrint(
+            "AppState: Received update for unknown device ID: ${updatedDevice.id}",
+          );
         }
       }
 
@@ -396,15 +400,16 @@ class AppState extends ChangeNotifier {
       // Update device list status
       _devicesStatus = _devices.isEmpty ? DataStatus.empty : DataStatus.success;
       _devicesError = null; // Clear any previous error
-
     } catch (e, stackTrace) {
-       debugPrint("AppState: Error handling device updates: $e\n$stackTrace");
-       _devicesStatus = DataStatus.error;
-       _devicesError = "Failed to process device updates.";
-       // Optionally generate a user-facing alert as well
-       _handleAlertGenerated(EnergyAlert(message: _devicesError!, time: DateTime.now()));
+      debugPrint("AppState: Error handling device updates: $e\n$stackTrace");
+      _devicesStatus = DataStatus.error;
+      _devicesError = "Failed to process device updates.";
+      // Optionally generate a user-facing alert as well
+      _handleAlertGenerated(
+        EnergyAlert(message: _devicesError!, time: DateTime.now()),
+      );
     } finally {
-       notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -535,6 +540,7 @@ class AppState extends ChangeNotifier {
           usageHistory: _updateUsageHistory(device.usageHistory, newUsage),
           room: device.room,
           settings: device.settings,
+          ecoMode: device.ecoMode,
         );
       }
     }
@@ -569,10 +575,11 @@ class AppState extends ChangeNotifier {
     return _currentPowerUsage * 24 * _energyRate;
   }
 
- // Getters
- List<Device> get devices => _devices; // Removed demo mode check
+  // Getters
+  List<Device> get devices => _devices; // Removed demo mode check
   List<Device> get discoveredDevices => _discoveredDevices;
-  DataStatus get discoveryStatus => _discoveryStatus; // Use status instead of bool
+  DataStatus get discoveryStatus =>
+      _discoveryStatus; // Use status instead of bool
   String? get discoveryError => _discoveryError;
   DataStatus get devicesStatus => _devicesStatus;
   String? get devicesError => _devicesError;
@@ -580,10 +587,11 @@ class AppState extends ChangeNotifier {
   // Removed isUpdatingDevice getter
   double get todayUsage => _todayUsage;
   double get weeklyUsage => _weeklyUsage;
- double get monthlyUsage => _monthlyUsage;
- double get currentPowerUsage => _currentPowerUsage; // Removed demo mode check
- List<double> get hourlyUsageData => _hourlyUsageData; // Removed demo mode check
- // Comment related to removed demo mode
+  double get monthlyUsage => _monthlyUsage;
+  double get currentPowerUsage => _currentPowerUsage; // Removed demo mode check
+  List<double> get hourlyUsageData =>
+      _hourlyUsageData; // Removed demo mode check
+  // Comment related to removed demo mode
   double get energyRate => _energyRate;
   double get yesterdayUsage => _yesterdayUsage;
   double get todayEstimatedUsage => _todayEstimatedUsage;
@@ -591,8 +599,26 @@ class AppState extends ChangeNotifier {
   List<EnergyAlert> get energyAlerts => _energyAlerts;
   AppSettings get appSettings => _appSettings;
   GamificationState get gamificationState => _gamificationState;
- List<Achievement> get allAchievements => _allAchievements;
- int get currentNavigationIndex => _currentNavigationIndex;
+  List<Achievement> get allAchievements => _allAchievements;
+  int get currentNavigationIndex => _currentNavigationIndex;
+  bool _ecoMode = false;
+  bool get ecoMode => _ecoMode;
+
+  void toggleEcoMode() {
+    _ecoMode = !_ecoMode;
+    for (var device in _devices) {
+      device.ecoMode = _ecoMode;
+      // Optionally, reduce device usage when eco mode is on
+      if (_ecoMode) {
+        device.currentUsage =
+            device.currentUsage * 0.6; // Example: reduce by 40%
+      } else {
+        // Optionally restore to maxUsage or previous value
+        // For demo, just leave as is
+      }
+    }
+    notifyListeners();
+  }
 
   bool isUsageLowerThanYesterday() {
     return _todayEstimatedUsage < _yesterdayUsage;
@@ -701,27 +727,26 @@ class AppState extends ChangeNotifier {
 
       _discoveredDevices = discovered;
       // Set status based on results
-      _discoveryStatus = _discoveredDevices.isEmpty ? DataStatus.empty : DataStatus.success;
-
+      _discoveryStatus =
+          _discoveredDevices.isEmpty ? DataStatus.empty : DataStatus.success;
     } catch (e, stackTrace) {
       debugPrint("AppState: Device scan failed: $e\n$stackTrace");
       _discoveryStatus = DataStatus.error;
       // Provide a more user-friendly error message
-      _discoveryError = 'Device scan failed. Please check network connection and try again.';
+      _discoveryError =
+          'Device scan failed. Please check network connection and try again.';
       _discoveredDevices = []; // Ensure list is empty on error
 
       // Also generate an alert for the user
       _handleAlertGenerated(
-        EnergyAlert(
-          message: _discoveryError!,
-          time: DateTime.now(),
-        ),
+        EnergyAlert(message: _discoveryError!, time: DateTime.now()),
       );
     } finally {
       // Ensure status is not loading anymore, even if an unexpected error occurred
       if (_discoveryStatus == DataStatus.loading) {
-         _discoveryStatus = DataStatus.error; // Assume error if still loading here
-         _discoveryError = 'An unexpected error occurred during device scan.';
+        _discoveryStatus =
+            DataStatus.error; // Assume error if still loading here
+        _discoveryError = 'An unexpected error occurred during device scan.';
       }
       notifyListeners();
     }
@@ -789,20 +814,28 @@ class AppState extends ChangeNotifier {
         );
 
         if (!success) {
-           // Handle simulation-reported failure (e.g., network error)
-           _handleAlertGenerated(EnergyAlert(message: "Failed to update settings for ${device.name}.", time: DateTime.now()));
+          // Handle simulation-reported failure (e.g., network error)
+          _handleAlertGenerated(
+            EnergyAlert(
+              message: "Failed to update settings for ${device.name}.",
+              time: DateTime.now(),
+            ),
+          );
         }
         return success;
-
       } catch (e, stackTrace) {
         debugPrint("AppState: Error updating device settings: $e\n$stackTrace");
-        _handleAlertGenerated(EnergyAlert(message: "Error updating settings for ${device.name}.", time: DateTime.now()));
+        _handleAlertGenerated(
+          EnergyAlert(
+            message: "Error updating settings for ${device.name}.",
+            time: DateTime.now(),
+          ),
+        );
         return false; // Indicate failure
       }
     }
     return false; // Device not found
   }
-
 
   // Get available rooms
   List<String> getRooms() {
@@ -1341,19 +1374,18 @@ class AppState extends ChangeNotifier {
     _checkAchievements(scoreChecked: true);
   }
 
- // --- End Gamification Logic ---
+  // --- End Gamification Logic ---
 
- // --- Demo Mode Methods Removed ---
+  // --- Demo Mode Methods Removed ---
 
- // --- Navigation Control ---
+  // --- Navigation Control ---
 
- /// Navigates the main bottom navigation bar to the specified page index.
- void navigateToPageIndex(int index, int pageCount) {
-   // Check if the index is valid and different from the current one.
-   if (index >= 0 && index < pageCount && index != _currentNavigationIndex) {
-     _currentNavigationIndex = index;
-     notifyListeners();
-   }
- }
-
+  /// Navigates the main bottom navigation bar to the specified page index.
+  void navigateToPageIndex(int index, int pageCount) {
+    // Check if the index is valid and different from the current one.
+    if (index >= 0 && index < pageCount && index != _currentNavigationIndex) {
+      _currentNavigationIndex = index;
+      notifyListeners();
+    }
+  }
 }

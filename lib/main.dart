@@ -27,7 +27,7 @@ void main() {
 
   // OpenRouter API key for AI chat
   const String openRouterApiKey =
-      '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';
+      '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';
 
   runApp(
     MultiProvider(
