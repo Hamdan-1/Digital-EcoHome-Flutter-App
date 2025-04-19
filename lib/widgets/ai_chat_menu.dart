@@ -126,6 +126,7 @@ class _AiChatMenuState extends State<AiChatMenu>
       sessions.removeAt(0);
     }
     await prefs.setStringList('chat_sessions', sessions);
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Chat session saved')));
@@ -136,6 +137,7 @@ class _AiChatMenuState extends State<AiChatMenu>
       context,
       MaterialPageRoute(builder: (_) => const ChatHistoryPage()),
     );
+    if (!mounted) return;
     if (result != null) {
       setState(() {
         _messages.clear();
@@ -153,6 +155,7 @@ class _AiChatMenuState extends State<AiChatMenu>
     final aiService = Provider.of<AiService>(context, listen: false);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true, // Fix for keyboard overflow
       appBar: AppBar(
         title: const Text('EcoAssistant AI Chat'),
         actions: [

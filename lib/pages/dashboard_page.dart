@@ -9,7 +9,6 @@ import '../widgets/notification_badge.dart';
 import '../widgets/notification_panel.dart';
 import '../services/notification_service.dart';
 import '../utils/notification_helper.dart';
-// import '../utils/error_handler.dart'; // Unused import
 import '../widgets/optimized_loading_indicator.dart';
 // Removed Demo Mode imports
 import 'dart:math' as math;

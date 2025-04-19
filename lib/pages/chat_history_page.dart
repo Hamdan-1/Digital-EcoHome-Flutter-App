@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ai_chat_menu.dart';
 
 class ChatHistoryPage extends StatefulWidget {
-  const ChatHistoryPage({Key? key}) : super(key: key);
+  const ChatHistoryPage({super.key});
 
   @override
-  _ChatHistoryPageState createState() => _ChatHistoryPageState();
+  State<ChatHistoryPage> createState() => _ChatHistoryPageState();
 }
 
 class _ChatHistoryPageState extends State<ChatHistoryPage> {

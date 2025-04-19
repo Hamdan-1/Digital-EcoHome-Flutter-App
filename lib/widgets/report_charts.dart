@@ -29,14 +29,14 @@ class PieChartWidget extends StatelessWidget {
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white, // Consider using theme card color
+        color: theme.cardColor, // Use theme card color
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: data.isEmpty
               ? Center(
                   child: Text(
                     'No data available',
-                    style: TextStyle(color: theme.disabledColor),
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant), // Use theme color
                   ),
                 )
               : PieChart(
@@ -75,10 +75,12 @@ class PieChartWidget extends StatelessWidget {
           value: entry.value,
           title: '${(percentage * 100).toStringAsFixed(1)}%',
           radius: 60,
-          titleStyle: const TextStyle(
+          titleStyle: TextStyle( // Use theme color for contrast
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+                   ? Colors.white
+                   : Colors.black,
           ),
           badgeWidget:
               centerText.isNotEmpty
@@ -106,12 +108,11 @@ class _Badge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface, // Use theme surface color
         shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 2),
-        boxShadow: [
+        border: Border.all(color: borderColor, width: 2),        boxShadow: [ // Use theme shadow color
           BoxShadow(
-            color: Colors.black.withAlpha((0.1 * 255).round()),
+            color: Theme.of(context).shadowColor.withAlpha((0.1 * 255).round()),
             offset: const Offset(2, 2),
             blurRadius: 3,
           ),
@@ -156,14 +157,14 @@ class BarChartWidget extends StatelessWidget {
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white, // Consider using theme card color
+        color: theme.cardColor, // Use theme card color
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: data.isEmpty
               ? Center(
                   child: Text(
                     'No data available',
-                     style: TextStyle(color: theme.disabledColor),
+                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant), // Use theme color
                   ),
                 )
               : BarChart(
@@ -173,21 +174,21 @@ class BarChartWidget extends StatelessWidget {
                     barTouchData: BarTouchData(
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
-                        tooltipBgColor: Colors.blueGrey.shade800,
+                        tooltipBgColor: theme.colorScheme.inverseSurface, // Use theme tooltip color
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
                           // Safety check for index
                           if (groupIndex >= 0 && groupIndex < data.length) {
                             return BarTooltipItem(
                               '${data[groupIndex]['name']}\n',
-                              const TextStyle(
-                                color: Colors.white,
+                              TextStyle( // Use theme tooltip text color
+                                color: theme.colorScheme.onInverseSurface,
                                 fontWeight: FontWeight.bold,
                               ),
                               children: <TextSpan>[
                                 TextSpan(
                                   text: '${rod.toY.toStringAsFixed(1)} kWh', // Use appropriate unit
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle( // Use theme tooltip text color
+                                    color: theme.colorScheme.onInverseSurface,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -218,13 +219,13 @@ class BarChartWidget extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          getTitlesWidget: _bottomTitles,
+                          getTitlesWidget: (value, meta) => _bottomTitles(value, meta, theme), // Pass theme
                           reservedSize: 42,
                         ),
                         axisNameWidget: Text(
                           xAxisLabel,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondaryColor,
+                          style: TextStyle( // Use theme color
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -233,12 +234,12 @@ class BarChartWidget extends StatelessWidget {
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 40,
-                          getTitlesWidget: _leftTitles,
+                          getTitlesWidget: (value, meta) => _leftTitles(value, meta, theme), // Pass theme
                         ),
                         axisNameWidget: Text(
                           yAxisLabel,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondaryColor,
+                          style: TextStyle( // Use theme color
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -248,11 +249,11 @@ class BarChartWidget extends StatelessWidget {
                     gridData: FlGridData(
                       show: true,
                       getDrawingHorizontalLine: (value) {
-                        return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
+                        return FlLine(color: theme.dividerColor.withAlpha((0.5 * 255).round()), strokeWidth: 1); // Use theme divider color
                       },
                       horizontalInterval: _getMaxY() / 5, // Use calculated maxY
                     ),
-                    barGroups: _getBarGroups(), // Handles empty data internally now
+                    barGroups: _getBarGroups(theme), // Pass theme
                   ),
                 ),
         ),
@@ -260,7 +261,7 @@ class BarChartWidget extends StatelessWidget {
     );
   }
 
-  Widget _bottomTitles(double value, TitleMeta meta) {
+  Widget _bottomTitles(double value, TitleMeta meta, ThemeData theme) { // Add theme parameter
     final index = value.toInt();
     if (index >= 0 && index < data.length) {
       String title = data[index]['label'] ?? '';
@@ -274,8 +275,8 @@ class BarChartWidget extends StatelessWidget {
           quarterTurns: 1,
           child: Text(
             title,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
+            style: TextStyle( // Use theme color
+              color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -286,7 +287,7 @@ class BarChartWidget extends StatelessWidget {
     return const SizedBox();
   }
 
-  Widget _leftTitles(double value, TitleMeta meta) {
+  Widget _leftTitles(double value, TitleMeta meta, ThemeData theme) { // Add theme parameter
     if (value == 0) {
       return const SizedBox();
     }
@@ -294,8 +295,8 @@ class BarChartWidget extends StatelessWidget {
       axisSide: meta.axisSide,
       child: Text(
         value.toStringAsFixed(1),
-        style: const TextStyle(
-          color: AppTheme.textSecondaryColor,
+        style: TextStyle( // Use theme color
+          color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.bold,
           fontSize: 10,
         ),
@@ -314,11 +315,12 @@ class BarChartWidget extends StatelessWidget {
     return maxY == 0 ? 10 : maxY;
   }
 
-  List<BarChartGroupData> _getBarGroups() {
+  List<BarChartGroupData> _getBarGroups(ThemeData theme) { // Add theme parameter
     return List.generate(data.length, (index) {
       final item = data[index];
       final value = item['value'] as double;
-      final color = item['color'] as Color? ?? AppTheme.primaryColor;
+      // Use theme's primary color as default if item['color'] is null
+      final color = item['color'] as Color? ?? theme.colorScheme.primary;
 
       return BarChartGroupData(
         x: index,
@@ -334,7 +336,7 @@ class BarChartWidget extends StatelessWidget {
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: _getMaxY() * 1.2,
-              color: Colors.grey.shade100,
+              color: theme.colorScheme.surfaceContainerHighest, // Use theme background color
             ),
           ),
         ],
@@ -372,7 +374,7 @@ class LineChartWidget extends StatelessWidget {
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white, // Consider using theme card color
+        color: theme.cardColor, // Use theme card color
         child: Padding(
           padding: const EdgeInsets.only(
             top: 24,
@@ -384,18 +386,18 @@ class LineChartWidget extends StatelessWidget {
               ? Center(
                   child: Text(
                     'No data available',
-                     style: TextStyle(color: theme.disabledColor),
+                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant), // Use theme color
                   ),
                 )
               : LineChart(
-                  mainData(), // mainData() needs to handle empty data if necessary
+                  mainData(theme), // Pass theme
                 ),
         ),
       ),
     );
   }
 
-  LineChartData mainData() {
+  LineChartData mainData(ThemeData theme) { // Add theme parameter
     final maxY = _getMaxY() * 1.2;
     final minY = _getMinY() * 0.8;
     final averageY = showAverage ? _getAverageY() : null;
@@ -406,11 +408,10 @@ class LineChartWidget extends StatelessWidget {
         drawVerticalLine: true,
         horizontalInterval: (maxY - minY) / 5,
         verticalInterval: 1,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
+        getDrawingHorizontalLine: (value) {          return FlLine(color: theme.dividerColor.withAlpha((0.5 * 255).round()), strokeWidth: 1); // Use theme divider color
         },
         getDrawingVerticalLine: (value) {
-          return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
+          return FlLine(color: theme.dividerColor.withAlpha((0.5 * 255).round()), strokeWidth: 1); // Use theme divider color
         },
       ),
       titlesData: FlTitlesData(
@@ -422,12 +423,12 @@ class LineChartWidget extends StatelessWidget {
             showTitles: true,
             reservedSize: 30,
             interval: data.length > 10 ? (data.length / 5).ceilToDouble() : 1,
-            getTitlesWidget: _bottomTitles,
+            getTitlesWidget: (value, meta) => _bottomTitles(value, meta, theme), // Pass theme
           ),
           axisNameWidget: Text(
             xAxisLabel,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
+            style: TextStyle( // Use theme color
+              color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
             ),
           ),
@@ -436,13 +437,13 @@ class LineChartWidget extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             interval: (maxY - minY) / 4,
-            getTitlesWidget: _leftTitles,
+            getTitlesWidget: (value, meta) => _leftTitles(value, meta, theme), // Pass theme
             reservedSize: 42,
           ),
           axisNameWidget: Text(
             yAxisLabel,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
+            style: TextStyle( // Use theme color
+              color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
             ),
           ),
@@ -450,9 +451,9 @@ class LineChartWidget extends StatelessWidget {
       ),
       borderData: FlBorderData(
         show: true,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade300),
-          left: BorderSide(color: Colors.grey.shade300),
+        border: Border( // Use theme divider color
+          bottom: BorderSide(color: theme.dividerColor),
+          left: BorderSide(color: theme.dividerColor),
         ),
       ),
       minX: 0,
@@ -461,7 +462,7 @@ class LineChartWidget extends StatelessWidget {
       maxY: maxY,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          tooltipBgColor: Colors.blueGrey.shade800,
+          tooltipBgColor: theme.colorScheme.inverseSurface, // Use theme tooltip color
           getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
             return touchedBarSpots
                 .map((barSpot) {
@@ -473,15 +474,15 @@ class LineChartWidget extends StatelessWidget {
 
                     return LineTooltipItem(
                       '${label.isEmpty ? 'Point $index' : label}\n',
-                      const TextStyle(
-                        color: Colors.white,
+                      TextStyle( // Use theme tooltip text color
+                        color: theme.colorScheme.onInverseSurface,
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
                         TextSpan(
                           text: '${value.toStringAsFixed(1)} kWh',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle( // Use theme tooltip text color
+                            color: theme.colorScheme.onInverseSurface,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
@@ -516,7 +517,7 @@ class LineChartWidget extends StatelessWidget {
                 radius: 4,
                 color: gradientColors[1],
                 strokeWidth: 2,
-                strokeColor: Colors.white,
+                strokeColor: theme.colorScheme.surface, // Use theme surface color for contrast
               );
             },
           ),
@@ -535,9 +536,9 @@ class LineChartWidget extends StatelessWidget {
         // Add average line if needed
         if (averageY != null)
           LineChartBarData(
-            spots: [FlSpot(0, averageY), FlSpot(data.length - 1, averageY)],
+            spots: [FlSpot(0, averageY), FlSpot(data.length - 1.0, averageY)], // Ensure maxX is double
             isCurved: false,
-            color: Colors.red.shade300,
+            color: theme.colorScheme.error, // Use theme error color
             barWidth: 2,
             isStrokeCapRound: true,
             dotData: FlDotData(show: false),
@@ -550,15 +551,15 @@ class LineChartWidget extends StatelessWidget {
                 horizontalLines: [
                   HorizontalLine(
                     y: averageY,
-                    color: Colors.red.shade300,
+                    color: theme.colorScheme.error, // Use theme error color
                     strokeWidth: 2,
                     dashArray: [5, 5],
                     label: HorizontalLineLabel(
                       show: true,
                       alignment: Alignment.topRight,
                       padding: const EdgeInsets.only(right: 5, bottom: 5),
-                      style: TextStyle(
-                        color: Colors.red.shade300,
+                      style: TextStyle( // Use theme error color
+                        color: theme.colorScheme.error,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -572,16 +573,16 @@ class LineChartWidget extends StatelessWidget {
     );
   }
 
-  Widget _bottomTitles(double value, TitleMeta meta) {
+  Widget _bottomTitles(double value, TitleMeta meta, ThemeData theme) { // Add theme parameter
     final index = value.toInt();
     if (index >= 0 && index < data.length) {
       final String text = data[index]['label'] ?? '';
       return SideTitleWidget(
         axisSide: meta.axisSide,
         child: Text(
-          text.length > 5 ? '${text.substring(0, 3)}..' : text, // Corrected interpolation
-          style: const TextStyle(
-            color: AppTheme.textSecondaryColor,
+          text.length > 5 ? '${text.substring(0, 3)}..' : text,
+          style: TextStyle( // Use theme color
+            color: theme.colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.bold,
             fontSize: 10,
           ),
@@ -591,13 +592,13 @@ class LineChartWidget extends StatelessWidget {
     return const SizedBox();
   }
 
-  Widget _leftTitles(double value, TitleMeta meta) {
+  Widget _leftTitles(double value, TitleMeta meta, ThemeData theme) { // Add theme parameter
     return SideTitleWidget(
       axisSide: meta.axisSide,
       child: Text(
         value.toStringAsFixed(1),
-        style: const TextStyle(
-          color: AppTheme.textSecondaryColor,
+        style: TextStyle( // Use theme color
+          color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.bold,
           fontSize: 10,
         ),
@@ -655,25 +656,33 @@ class EnergyComparisionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Get theme
+    final colorScheme = theme.colorScheme; // Get color scheme
+
     final difference = currentValue - previousValue;
     final percentChange =
         previousValue != 0 ? (difference / previousValue) * 100 : 0.0;
     final isIncrease = difference > 0;
 
+    // Define colors based on theme
+    final increaseColor = colorScheme.error; // Typically red for increase/bad
+    final decreaseColor = AppTheme.getSuccessColor(context); // Typically green for decrease/good
+    final currentColor = colorScheme.primary;
+    final previousColor = colorScheme.secondary;
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.cardColor, // Use theme card color
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text( // Removed const
               'Comparison',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface, // Use theme text color
               ),
             ),
             const SizedBox(height: 16),
@@ -683,15 +692,17 @@ class EnergyComparisionWidget extends StatelessWidget {
                   child: _buildValueColumn(
                     currentValue,
                     currentLabel,
-                    Colors.blue,
+                    currentColor, // Use theme color
+                    theme, // Pass theme
                   ),
                 ),
-                Container(height: 50, width: 1, color: Colors.grey.shade300),
+                Container(height: 50, width: 1, color: theme.dividerColor), // Use theme divider color
                 Expanded(
                   child: _buildValueColumn(
                     previousValue,
                     previousLabel,
-                    Colors.grey.shade700,
+                    previousColor, // Use theme color
+                    theme, // Pass theme
                   ),
                 ),
               ],
@@ -702,16 +713,14 @@ class EnergyComparisionWidget extends StatelessWidget {
               children: [
                 Icon(
                   isIncrease ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: isIncrease ? Colors.red : Colors.green,
+                  color: isIncrease ? increaseColor : decreaseColor, // Use theme colors
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${isIncrease ? '+' : ''}${difference.toStringAsFixed(1)} $unit (${percentChange.abs().toStringAsFixed(1)}%)',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isIncrease ? Colors.red : Colors.green,
+                  style: theme.textTheme.titleMedium?.copyWith( // Use theme text style
+                    color: isIncrease ? increaseColor : decreaseColor, // Use theme colors
                   ),
                 ),
               ],
@@ -722,13 +731,12 @@ class EnergyComparisionWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildValueColumn(double value, String label, Color color) {
+  Widget _buildValueColumn(double value, String label, Color color, ThemeData theme) { // Pass theme
     return Column(
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
+          style: theme.textTheme.labelLarge?.copyWith( // Use theme text style
             color: color,
             fontWeight: FontWeight.w500,
           ),
@@ -736,10 +744,9 @@ class EnergyComparisionWidget extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           '${value.toStringAsFixed(1)} $unit',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+          style: theme.textTheme.headlineSmall?.copyWith( // Use theme text style
             color: color,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -769,9 +776,13 @@ class DeviceEnergyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Get theme
+    final colorScheme = theme.colorScheme; // Get color scheme
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
+      color: theme.cardColor, // Use theme card color
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       // Replace InkWell with AnimatedTapButton
       child: AnimatedTapButton(
@@ -797,18 +808,16 @@ class DeviceEnergyCard extends StatelessWidget {
                   children: [
                     Text(
                       deviceName,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.titleMedium?.copyWith( // Use theme text style
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
+                        color: colorScheme.onSurface, // Use theme color
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       deviceType,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondaryColor,
+                      style: theme.textTheme.bodyMedium?.copyWith( // Use theme text style
+                        color: colorScheme.onSurfaceVariant, // Use theme color
                       ),
                     ),
                   ],
@@ -819,18 +828,16 @@ class DeviceEnergyCard extends StatelessWidget {
                 children: [
                   Text(
                     '${energyUsage.toStringAsFixed(1)} kWh',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: theme.textTheme.titleMedium?.copyWith( // Use theme text style
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
+                      color: colorScheme.onSurface, // Use theme color
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '\$${cost.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondaryColor,
+                    style: theme.textTheme.bodyMedium?.copyWith( // Use theme text style
+                      color: colorScheme.onSurfaceVariant, // Use theme color
                     ),
                   ),
                 ],

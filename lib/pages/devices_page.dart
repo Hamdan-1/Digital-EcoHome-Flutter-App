@@ -6,6 +6,8 @@ import '../theme.dart';
 import 'device_control/ac_control_page.dart';
 import 'device_control/washing_machine_control_page.dart';
 import 'device_control/light_control_page.dart';
+import 'device_control/water_heater_control_page.dart';
+import 'device_control/refrigerator_control_page.dart';
 import '../widgets/optimized_loading_indicator.dart';
 import '../utils/error_handler.dart';
 // Removed Demo Mode import
@@ -1088,7 +1090,7 @@ class _DevicesPageState extends State<DevicesPage>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.greenAccent.withOpacity(0.18),
+                      color: Colors.greenAccent.withAlpha((0.18 * 255).round()),
                       blurRadius: 18,
                       spreadRadius: 2,
                     ),
@@ -1111,7 +1113,7 @@ class _DevicesPageState extends State<DevicesPage>
             borderRadius: BorderRadius.circular(16),
             side:
                 isEco
-                    ? BorderSide(color: Colors.green.withOpacity(0.5), width: 2)
+                    ? BorderSide(color: Colors.green.withAlpha((0.5 * 255).round()), width: 2)
                     : BorderSide(
                       color: Theme.of(context).dividerColor.withAlpha(
                         (isDarkMode ? 0.5 : 0.2 * 255).round(),
@@ -1161,7 +1163,7 @@ class _DevicesPageState extends State<DevicesPage>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.green.withOpacity(0.3),
+                            color: Colors.green.withAlpha((0.3 * 255).round()),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -1297,9 +1299,7 @@ class _DevicesPageState extends State<DevicesPage>
         ),
       ],
     );
-  }
-
-  void _navigateToDeviceControl(BuildContext context, Device device) {
+  }  void _navigateToDeviceControl(BuildContext context, Device device) {
     Widget controlPage;
 
     if (device.type == 'HVAC') {
@@ -1309,6 +1309,12 @@ class _DevicesPageState extends State<DevicesPage>
       controlPage = WashingMachineControlPage(deviceId: device.id);
     } else if (device.type == 'Light') {
       controlPage = LightControlPage(deviceId: device.id);
+    } else if (device.type == 'Appliance' &&
+        device.iconPath == 'kitchen') {
+      controlPage = RefrigeratorControlPage(deviceId: device.id);
+    } else if ((device.type == 'Appliance' || device.type == 'Water') &&
+        (device.iconPath == 'hot_tub' || device.name.toLowerCase().contains('water heater'))) {
+      controlPage = WaterHeaterControlPage(deviceId: device.id);
     } else {
       // Show a toast that control page is not implemented for this device type
       ScaffoldMessenger.of(context).showSnackBar(

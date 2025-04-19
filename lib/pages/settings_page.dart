@@ -1900,74 +1900,51 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Removed unused method _updateAdvancedSettings
 
-  // Custom dark mode toggle setting
+  // Build the dark mode toggle setting
   Widget _buildDarkModeToggleSetting() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.dark_mode, color: AppTheme.primaryColor),
-        ),
-        title: Text(
-          'Dark Mode',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        subtitle: Text(
-          'Toggle dark theme',
-          style: TextStyle(color: AppTheme.getTextSecondaryColor(context)),
-        ),
-        trailing: DarkModeToggle(
-          value: _userPreferences.darkModeEnabled,
-          onChanged: (value) {
-            // Update user preferences
-            final updatedPreferences = _userPreferences.copyWith(
-              darkModeEnabled: value,
-            );
-            setState(() {
-              _userPreferences = updatedPreferences;
-            });
-            _updateUserPreferences(updatedPreferences);
-
-            // Update theme provider
-            themeProvider.setDarkMode(value);
-          },
-        ),
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 8.0),
+      child: DarkModeToggle(
+        title: 'Dark Mode',
+        subtitle: 'Switch between light and dark theme',
       ),
     );
   }
 
-
-  // Theme selection setting
+  // Theme selection dropdown
   Widget _buildThemeSelectionSetting() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return _buildDropdownSetting<String>(
-      title: 'App Theme',
-      subtitle: 'Select the application theme',
-      value: themeProvider.selectedThemeKey,
-      items: themeProvider.availableThemeKeys,
-      icon: Icons.palette,
-      onChanged: (value) {
-        if (value != null) {
-          themeProvider.setTheme(value);
-          // Optionally, update user preferences if theme is stored there too
-          // final updatedPreferences = _userPreferences.copyWith(selectedTheme: value);
-          // setState(() { _userPreferences = updatedPreferences; });
-          // _updateUserPreferences(updatedPreferences);
-        }
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.color_lens),
+                title: const Text('Theme Selection'),
+                subtitle: const Text('Choose your preferred color theme'),
+                trailing: DropdownButton<String>(
+                  value: themeProvider.selectedThemeKey,
+                  underline: Container(), // Remove the default underline
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      themeProvider.setTheme(newValue);
+                    }
+                  },
+                  items: themeProvider.availableThemeKeys
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
-
 }

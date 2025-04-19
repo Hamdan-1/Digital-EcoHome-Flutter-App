@@ -64,7 +64,7 @@ class _EnergySavingRecommendationsState
            await Future.microtask(() => service.initWithSamples());
         } else {
            // Use generateRecommendations for refresh
-           await service.generateRecommendations();
+           service.generateRecommendations();
         }
 
         // Check mounted state again after async operation
