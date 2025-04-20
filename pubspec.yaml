@@ -49,6 +49,7 @@ dependencies:
   # HTTP requests
   http: ^1.1.0
   package_info_plus: ^8.0.0 # Added for app version info
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
