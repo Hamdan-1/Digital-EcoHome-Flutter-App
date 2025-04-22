@@ -8,7 +8,6 @@ import 'settings/user_preferences.dart';
 import 'settings/home_configuration.dart';
 import 'settings/device_management.dart';
 import 'settings/advanced_settings.dart';
-// Import IoT simulation components
 import 'simulation/iot_simulation_controller.dart';
 import 'simulation/simulation_config.dart';
 import 'gamification.dart'; // Import the new gamification models
@@ -376,6 +375,8 @@ class AppState extends ChangeNotifier {
           // Find index and update (or replace if immutable)
           final index = _devices.indexWhere((d) => d.id == updatedDevice.id);
           if (index != -1) {
+            // Preserve ecoMode state
+            updatedDevice.ecoMode = deviceMap[updatedDevice.id]!.ecoMode;
             _devices[index] = updatedDevice;
           }
         } else {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme.dart';
 import 'models/app_state.dart';
 import 'pages/splash_screen.dart';
@@ -20,8 +19,6 @@ import 'widgets/optimized_loading_indicator.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
 
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([
@@ -29,8 +26,8 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // OpenRouter API key for AI chat from environment variable
-  final String openRouterApiKey = dotenv.env['API_KEY'] ?? 'default-key-if-not-found';
+  // AI Chat API key hardcoded
+  final String openRouterApiKey = 'AIzaSyBYdaaHhwBcd0FhtURJJjZldCl8tNdWMyg';
 
   runApp(
     MultiProvider(
