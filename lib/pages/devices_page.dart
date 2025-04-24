@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import '../models/data_status.dart'; // Import DataStatus enum
+import '../services/arduino_service.dart'; // Import Arduino Service
 import '../theme.dart';
 import 'device_control/ac_control_page.dart';
 import 'device_control/washing_machine_control_page.dart';
@@ -40,6 +41,17 @@ class _DevicesPageState extends State<DevicesPage>
   bool _isSearchActive = false;
   String _sortOption = 'usage_desc'; // Default sort: usage descending
 
+  // State for Arduino Control
+  final TextEditingController _ipController = TextEditingController();
+  final TextEditingController _lcdController = TextEditingController();
+  double _windowServoValue = 0; // 0-180
+  bool _isDoorLocked = true; // Assuming default is locked
+  bool _isFanOn = false;
+  double _fanSpeedValue = 150; // 0-255, default moderate speed
+  bool _isYellowLedOn = false;
+  bool _isWhiteLedOn = false;
+
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +79,8 @@ class _DevicesPageState extends State<DevicesPage>
   void dispose() {
     _scanAnimationController?.dispose();
     _searchController.dispose();
+    _ipController.dispose();
+    _lcdController.dispose();
     super.dispose();
   }
 
@@ -175,6 +189,11 @@ class _DevicesPageState extends State<DevicesPage>
                 ),
               ],
             ),
+
+            // --- Arduino Control Section ---
+            _buildArduinoControlSection(context),
+            // --- End Arduino Control Section ---
+
 
             // Discovery Button
             SliverToBoxAdapter(
@@ -1643,4 +1662,412 @@ class _DevicesPageState extends State<DevicesPage>
       },
     );
   }
+
+
+  // --- Arduino Control Section Widget ---
+
+  Widget _buildArduinoControlSection(BuildContext context) {
+  // Use Consumer to listen to ArduinoService changes
+  return SliverToBoxAdapter(
+    child: Consumer<ArduinoService>(
+      builder: (context, arduinoService, child) {
+        final isConnected = arduinoService.isConnected;
+        final sensorData = arduinoService.sensorData;
+        final hasError = arduinoService.hasError;
+        final errorMessage = arduinoService.errorMessage;
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        // Reset local UI state if disconnected
+        // This prevents showing incorrect states after disconnection
+        if (!isConnected && (_isFanOn || !_isDoorLocked || _windowServoValue != 0 || _isYellowLedOn || _isWhiteLedOn)) {
+           WidgetsBinding.instance.addPostFrameCallback((_) {
+             if (mounted) { // Ensure widget is still mounted before calling setState
+                setState(() {
+                  _windowServoValue = 0;
+                  _isDoorLocked = true; // Assuming default is locked
+                  _isFanOn = false;
+                  _fanSpeedValue = 150; // Reset speed too
+                  _isYellowLedOn = false;
+                  _isWhiteLedOn = false;
+                  _lcdController.clear(); // Clear LCD input
+                });
+             }
+           });
+        }
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          elevation: isDarkMode ? 2 : 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: isConnected
+                  ? Colors.green.withAlpha(150)
+                  : Theme.of(context).dividerColor.withAlpha(100),
+              width: 1.5,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Connection Row ---
+                Row(
+                  children: [
+                    Icon(
+                      Icons.wifi_tethering,
+                      color: isConnected
+                          ? Colors.green
+                          : AppTheme.getTextSecondaryColor(context),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Arduino Control',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                    Text(
+                      isConnected ? 'Connected' : 'Disconnected',
+                      style: TextStyle(
+                        color: isConnected ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // --- IP Input and Connect/Disconnect ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _ipController,
+                        decoration: InputDecoration(
+                          labelText: 'Arduino IP Address',
+                          hintText: 'e.g., 192.168.1.100',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                        enabled: !isConnected, // Disable if connected
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (isConnected) {
+                          arduinoService.disconnect();
+                        } else {
+                          if (_ipController.text.isNotEmpty) {
+                            // Basic validation could be added here
+                            arduinoService.connect(_ipController.text);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please enter the Arduino IP address')),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isConnected ? Colors.redAccent : Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: Text(isConnected ? 'Disconnect' : 'Connect'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8), // Add space before potential error
+
+                // --- Display Error Message ---
+                if (hasError)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer.withAlpha(150),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              errorMessage ?? 'An unknown error occurred.',
+                              style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const Divider(height: 24),
+
+                // --- Controls (Enabled only if connected) ---
+                AbsorbPointer(
+                  absorbing: !isConnected, // Disable interactions if not connected
+                  child: Opacity(
+                    opacity: isConnected ? 1.0 : 0.5, // Dim if not connected
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- LCD Control ---
+                        Text('LCD Display:', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _lcdController,
+                                decoration: InputDecoration(
+                                  hintText: 'Text to display...',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              tooltip: 'Send to LCD',
+                              onPressed: () {
+                                arduinoService.updateLcd(_lcdController.text);
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppTheme.getPrimaryColor(context).withAlpha(50),
+                                foregroundColor: AppTheme.getPrimaryColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- Window Servo ---
+                        Text('Window Control (0-180): ${(_windowServoValue).round()}', style: Theme.of(context).textTheme.titleMedium),
+                        Slider(
+                          value: _windowServoValue,
+                          min: 0,
+                          max: 180,
+                          divisions: 18,
+                          label: _windowServoValue.round().toString(),
+                          onChanged: (double value) {
+                            setState(() {
+                              _windowServoValue = value;
+                            });
+                          },
+                          onChangeEnd: (double value) { // Send command when slider interaction ends
+                             arduinoService.setWindowAngle(value);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+
+                        // --- Door Servo ---
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                             Text('Door Control:', style: Theme.of(context).textTheme.titleMedium),
+                             ElevatedButton.icon(
+                                onPressed: () {
+                                  bool newState = !_isDoorLocked;
+                                  arduinoService.setDoor(!newState); // Send command to lock/unlock
+                                  setState(() {
+                                    _isDoorLocked = newState; // Update UI state optimistically
+                                  });
+                                },
+                                icon: Icon(_isDoorLocked ? Icons.lock_outline : Icons.lock_open_outlined),
+                                label: Text(_isDoorLocked ? 'Unlock Door' : 'Lock Door'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _isDoorLocked ? Colors.orangeAccent : Colors.lightBlueAccent,
+                                  foregroundColor: Colors.white,
+                                ),
+                             )
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- Fan Control ---
+                        Text('Fan Control:', style: Theme.of(context).textTheme.titleMedium),
+                        Row(
+                          children: [
+                            const Text('Off / On'),
+                            Switch(
+                              value: _isFanOn,
+                              onChanged: (bool value) {
+                                arduinoService.setFan(value);
+                                setState(() {
+                                  _isFanOn = value;
+                                });
+                              },
+                              activeColor: AppTheme.getPrimaryColor(context),
+                            ),
+                            Expanded(child: Container()), // Spacer
+                            Text('Speed: ${(_fanSpeedValue).round()}'),
+                          ],
+                        ),
+                        Slider(
+                          value: _fanSpeedValue,
+                          min: 0,
+                          max: 255,
+                          divisions: 25, // Optional divisions
+                          label: _fanSpeedValue.round().toString(),
+                          onChanged: _isFanOn ? (double value) { // Only allow change if fan is ON
+                            setState(() {
+                              _fanSpeedValue = value;
+                            });
+                          } : null, // Disable slider if fan is off
+                          onChangeEnd: (double value) {
+                            if (_isFanOn) { // Only send if fan is on
+                               arduinoService.setFanSpeed(value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- LED Control ---
+                        Text('LED Control:', style: Theme.of(context).textTheme.titleMedium),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                const Text('Yellow LED'),
+                                Switch(
+                                  value: _isYellowLedOn,
+                                  onChanged: (bool value) {
+                                    arduinoService.setLed('YELLOW', value);
+                                    setState(() { _isYellowLedOn = value; });
+                                  },
+                                  activeColor: Colors.amber,
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                const Text('White LED'),
+                                Switch(
+                                  value: _isWhiteLedOn,
+                                  onChanged: (bool value) {
+                                     arduinoService.setLed('WHITE', value);
+                                     setState(() { _isWhiteLedOn = value; });
+                                  },
+                                  activeColor: Colors.blueGrey[100],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- Buzzer Control ---
+                        Text('Buzzer Control:', style: Theme.of(context).textTheme.titleMedium),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => arduinoService.triggerBuzzer('ON'),
+                              child: const Text('Beep'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => arduinoService.triggerBuzzer('ALARM'),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                              child: const Text('Alarm'),
+                            ),
+                             ElevatedButton(
+                              onPressed: () => arduinoService.triggerBuzzer('OFF'),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                              child: const Text('Off'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(height: 24),
+
+                // --- Sensor Readings ---
+                Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   children: [
+                     Text('Sensor Readings:', style: Theme.of(context).textTheme.titleMedium),
+                     IconButton(
+                       icon: const Icon(Icons.refresh),
+                       tooltip: 'Refresh Sensor Data',
+                       onPressed: isConnected ? () => arduinoService.requestSensorUpdate() : null,
+                     )
+                   ],
+                ),
+                const SizedBox(height: 8),
+                if (isConnected)
+                  Wrap( // Use Wrap for flexible layout
+                    spacing: 12.0, // Horizontal space between items
+                    runSpacing: 8.0, // Vertical space between lines
+                    // Manually create chips for each sensor from the SensorData object
+                    children: [
+                      _buildSensorChip(context, 'GAS', sensorData.gas, Icons.gas_meter_outlined),
+                      _buildSensorChip(context, 'LIGHT', sensorData.light, Icons.lightbulb_outline),
+                      _buildSensorChip(context, 'SOIL', sensorData.soil, Icons.grass),
+                      _buildSensorChip(context, 'WATER', sensorData.water, Icons.water_drop_outlined),
+                      _buildSensorChip(context, 'PIR', sensorData.pir, Icons.directions_run),
+                    ],
+                  )
+                else
+                   Text(
+                     'Connect to Arduino to view sensor readings.',
+                     style: TextStyle(color: AppTheme.getTextSecondaryColor(context)),
+                   ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+  }
+
+  // Helper to get icons for sensor keys
+  IconData _getSensorIcon(String key) {
+    switch (key) {
+      case 'GAS': return Icons.gas_meter_outlined;
+      case 'LIGHT': return Icons.lightbulb_outline;
+      case 'SOIL': return Icons.grass; // Placeholder
+      case 'WATER': return Icons.water_drop_outlined;
+      case 'PIR': return Icons.directions_run; // Placeholder for motion
+      default: return Icons.help_outline;
+    }
+  }
+
+  // Helper widget to build a sensor chip consistently
+  Widget _buildSensorChip(BuildContext context, String label, dynamic value, IconData icon) {
+     final primaryColor = AppTheme.getPrimaryColor(context);
+     return Chip(
+       avatar: Icon(
+         icon,
+         color: primaryColor,
+         size: 18,
+       ),
+       label: Text(
+         '$label: $value', // Display label and value
+         style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
+       ),
+       backgroundColor: primaryColor.withAlpha(30),
+       side: BorderSide(color: primaryColor.withAlpha(80)),
+       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Adjust padding
+     );
+   }
+
 } // End of _DevicesPageState class

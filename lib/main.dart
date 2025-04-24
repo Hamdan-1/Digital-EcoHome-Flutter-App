@@ -14,6 +14,7 @@ import 'providers/theme_provider.dart';
 import 'services/ai_service.dart';
 import 'services/notification_service.dart';
 import 'widgets/optimized_loading_indicator.dart';
+import 'services/arduino_service.dart'; // Import Arduino Service
 // Demo Mode imports removed
 
 void main() async {
@@ -39,6 +40,7 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (context) => InAppNotificationService()),
         // Demo Mode Providers Removed
+        ChangeNotifierProvider(create: (context) => ArduinoService()), // Add Arduino Service
       ],
       child: const MyApp(),
     ),
