@@ -88,6 +88,7 @@ flutter:
   assets:
     - Digital EcoHome Logo dark Mode.png
     - Digital EcoHome logo Light Mode.png
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
