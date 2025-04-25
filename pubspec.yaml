@@ -63,18 +63,20 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_launcher_icons: "^0.10.0" # Add this line
 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "Digital EcoHome Logo dark Mode.png" # Using the dark mode logo
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  remove_alpha_ios: true # Recommended for iOS icons
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
   # Add this section for flutter_launcher_icons
-  flutter_launcher_icons:
-    android: "launcher_icon"
-    ios: true
-    image_path: "Digital EcoHome Logo dark Mode.png" # Using the dark mode logo
-    min_sdk_android: 21 # android min sdk min:16, default 21
-    remove_alpha_ios: true # Recommended for iOS icons
+  # Add this section for flutter_launcher_icons
 
 
   # The following line ensures that the Material Icons font is
