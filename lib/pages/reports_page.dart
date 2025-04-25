@@ -37,6 +37,14 @@ class _ReportsPageState extends State<ReportsPage>
   late List<EnergyAlert> _energyAlerts;
   late List<DeviceEnergyInfo> _deviceEnergyList;
 
+  // Map for icon paths to IconData
+  final Map<String, IconData> _iconMap = {
+    'hot_tub': Icons.hot_tub,
+    'kitchen': Icons.kitchen,
+    // Add other icon mappings as needed based on your Device models
+    'default': Icons.device_unknown, // Default icon
+  };
+
   @override
   void initState() {
     super.initState();
@@ -155,8 +163,8 @@ class _ReportsPageState extends State<ReportsPage>
                         selectedColor: AppTheme.getPrimaryColor(context),
                         labelStyle: TextStyle(
                           color: _selectedTimeRange == 'Daily' // Example check, adjust logic as needed
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onSurface,
+                               ? Theme.of(context).colorScheme.onPrimary
+                               : Theme.of(context).colorScheme.onSurface,
                         ),
                         // Removed duplicate onSelected
                       ),
@@ -376,7 +384,7 @@ class _ReportsPageState extends State<ReportsPage>
                               color: _selectedTimeRange == range
                                   ? colorScheme.onPrimary // Use theme color for selected
                                   : colorScheme.onSurfaceVariant, // Use theme color for unselected
-                              fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.bold,
                             ),
                           ),
                         );
@@ -823,10 +831,7 @@ class _ReportsPageState extends State<ReportsPage>
                   deviceType: device.type,
                   energyUsage: device.dailyUsage,
                   cost: device.weeklyCost,
-                  icon: IconData(
-                    device.iconPath.codeUnits[0],
-                    fontFamily: 'MaterialIcons',
-                  ),
+                  icon: _iconMap[device.iconPath] ?? _iconMap['default']!, // Use the map to get the constant IconData
                   color: device.color,
                 ),
               )
