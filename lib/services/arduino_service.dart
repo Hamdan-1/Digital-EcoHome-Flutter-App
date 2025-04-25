@@ -41,7 +41,7 @@ class SensorData {
         }
       }
     } catch (e) {
-      print("Error parsing sensor data string '$dataString': $e");
+      debugPrint("Error parsing sensor data string '$dataString': $e");
       // Return default values on error
     }
     return SensorData(gas: gas, light: light, soil: soil, water: water, pir: pir);
@@ -91,18 +91,18 @@ class ArduinoService extends ChangeNotifier {
 
   Future<bool> connect(String ipAddress) async {
     if (_isConnected) {
-      print('Already connected.');
+      debugPrint('Already connected.');
       _clearError(); // Clear any previous error on successful reconnect attempt
       return true;
     }
     _serverIp = ipAddress;
-    print('Attempting to connect to $_serverIp:$_port...');
+    debugPrint('Attempting to connect to $_serverIp:$_port...');
     _clearError(); // Clear previous errors before attempting connection
 
     try {
       _socket = await Socket.connect(_serverIp!, _port, timeout: Duration(seconds: 5));
       _isConnected = true;
-      print('Connected to Arduino at ${_socket?.remoteAddress.address}:${_socket?.remotePort}');
+      debugPrint('Connected to Arduino at ${_socket?.remoteAddress.address}:${_socket?.remotePort}');
 
       // Listen for data from the Arduino
       _socketSubscription = _socket!.listen(
@@ -118,7 +118,7 @@ class ArduinoService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Connection failed: $e');
+      debugPrint('Connection failed: $e');
       _setError('Connection failed: ${e.toString()}'); // Set user-friendly error
       _isConnected = false;
       _socket = null;
@@ -130,7 +130,7 @@ class ArduinoService extends ChangeNotifier {
 
   void disconnect() {
     if (!_isConnected) return;
-    print('Disconnecting...');
+    debugPrint('Disconnecting...');
     _socketSubscription?.cancel();
     _socket?.destroy(); // Close and destroy the socket
     _handleDisconnect(); // Ensure state is updated
@@ -166,7 +166,7 @@ class ArduinoService extends ChangeNotifier {
       final response = completeLine.trim();
 
       if (response.isNotEmpty) {
-         print('Processing line: "$response"');
+         debugPrint('Processing line: "$response"');
          _clearError(); // Clear error on receiving any valid data
         _parseResponse(response);
       }
@@ -183,17 +183,17 @@ class ArduinoService extends ChangeNotifier {
      if (response.startsWith("SENSORS:")) {
        _updateSensorData(response.substring(8)); // Remove "SENSORS:" prefix
      } else if (response.startsWith("ACK:")) {
-       print("Acknowledgement received: ${response.substring(4)}");
+       debugPrint("Acknowledgement received: ${response.substring(4)}");
        // Handle acknowledgements if needed (e.g., confirm command success)
      } else if (response.startsWith("ERROR:")) {
        final errorMsg = "Arduino Error: ${response.substring(6)}";
-       print(errorMsg);
+       debugPrint(errorMsg);
        _setError(errorMsg); // Set error state for UI
      } else if (response.startsWith("Welcome Client!")) {
-        print("Received welcome message from Arduino."); // Ignore welcome message here
+        debugPrint("Received welcome message from Arduino."); // Ignore welcome message here
      }
      else {
-       print("Unknown response format: $response");
+       debugPrint("Unknown response format: $response");
        // Optionally set an error for unknown responses if critical
        // _setError("Received unknown data from Arduino: $response");
      }
@@ -202,7 +202,7 @@ class ArduinoService extends ChangeNotifier {
  void _updateSensorData(String dataString) {
     try {
       _sensorData = SensorData.fromRawString(dataString); // Use the factory constructor
-      print("Updated Sensor Data: $_sensorData");
+      debugPrint("Updated Sensor Data: $_sensorData");
       notifyListeners(); // Notify listeners about sensor data update
     } catch (e) {
       // Error is already printed within the factory constructor
@@ -213,8 +213,8 @@ class ArduinoService extends ChangeNotifier {
 
   void _handleError(error, StackTrace stackTrace) {
     // This handles socket-level errors (e.g., connection reset)
-    print('Socket error: $error');
-    print(stackTrace);
+    debugPrint('Socket error: $error');
+    debugPrint(stackTrace.toString());
     _setError('Socket error: ${error.toString()}'); // Set user-friendly error
     _isConnected = false; // Ensure connection status is false
     _socketSubscription?.cancel();
@@ -227,7 +227,7 @@ class ArduinoService extends ChangeNotifier {
 
   void _handleDisconnect() {
     // This is called when the socket is closed gracefully (by remote or local)
-    print('Disconnected from Arduino.');
+    debugPrint('Disconnected from Arduino.');
     if (_isConnected) { // Only update state if we thought we were connected
       _isConnected = false;
       _socketSubscription?.cancel();
@@ -244,17 +244,17 @@ class ArduinoService extends ChangeNotifier {
 
   void sendCommand(String command) {
     if (!_isConnected || _socket == null) {
-      print('Not connected. Cannot send command: $command');
+      debugPrint('Not connected. Cannot send command: $command');
       _setError('Not connected. Please connect first.'); // Inform UI
       return;
     }
     try {
-      print('Sending command: $command');
+      debugPrint('Sending command: $command');
       _socket!.writeln(command); // Use writeln to add newline
       // await _socket!.flush(); // Flush might not be necessary with writeln, test if needed
       _clearError(); // Clear error on successful send attempt
     } catch (e) {
-      print('Error sending command "$command": $e');
+      debugPrint('Error sending command "$command": $e');
       _setError('Failed to send command: ${e.toString()}'); // Set error state
       // Consider if disconnection is needed here based on error type
     }
@@ -291,7 +291,7 @@ class ArduinoService extends ChangeNotifier {
      if (color == 'YELLOW' || color == 'WHITE') {
        sendCommand('LED_$color:${on ? 'ON' : 'OFF'}');
      } else {
-       print("Error: Invalid LED color '$color'");
+       debugPrint("Error: Invalid LED color '$color'");
        _setError("Invalid LED color specified."); // Inform UI
      }
    }
@@ -301,7 +301,7 @@ class ArduinoService extends ChangeNotifier {
      if (action == 'ON' || action == 'OFF' || action == 'ALARM') {
         sendCommand('BUZZER:$action');
      } else {
-       print("Error: Invalid Buzzer action '$action'");
+       debugPrint("Error: Invalid Buzzer action '$action'");
        _setError("Invalid Buzzer action specified."); // Inform UI
      }
    }

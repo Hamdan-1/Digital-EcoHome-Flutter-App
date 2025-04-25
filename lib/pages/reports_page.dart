@@ -5,7 +5,6 @@ import '../theme.dart';
 import '../widgets/report_charts.dart';
 import '../models/reports/energy_report_model.dart';
 import '../models/app_state.dart' hide EnergyAlert; // Import AppState and hide EnergyAlert
-import '../models/settings/user_preferences.dart'; // Import UserPreferences
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});

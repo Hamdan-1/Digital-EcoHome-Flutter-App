@@ -4,7 +4,6 @@ import 'dart:async';
 import '../../models/app_state.dart'; // Using the original Device class
 import '../../models/data_status.dart';
 import '../../theme.dart';
-import '../../models/settings/user_preferences.dart'; // Import UserPreferences
 import '../../widgets/optimized_loading_indicator.dart';
 import '../../utils/error_handler.dart';
 

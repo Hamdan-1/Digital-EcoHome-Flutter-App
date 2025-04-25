@@ -2067,37 +2067,6 @@ class _DevicesPageState extends State<DevicesPage>
    );
    }
  
-   // Helper to get icons for sensor keys (kept for potential future use or reference)
-   IconData _getSensorIcon(String key) {
-     switch (key) {
-       case 'GAS': return Icons.gas_meter_outlined;
-       case 'LIGHT': return Icons.lightbulb_outline;
-       case 'SOIL': return Icons.grass; // Placeholder
-       case 'WATER': return Icons.water_drop_outlined;
-       case 'PIR': return Icons.directions_run; // Placeholder for motion
-       default: return Icons.help_outline;
-     }
-   }
- 
-   // Helper widget to build a sensor chip consistently (kept for potential future use or reference)
-   Widget _buildSensorChip(BuildContext context, String label, dynamic value, IconData icon) {
-      final primaryColor = AppTheme.getPrimaryColor(context);
-      return Chip(
-        avatar: Icon(
-          icon,
-          color: primaryColor,
-          size: 18,
-        ),
-        label: Text(
-          '$label: $value', // Display label and value
-          style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
-        ),
-        backgroundColor: primaryColor.withAlpha(30),
-        side: BorderSide(color: primaryColor.withAlpha(80)),
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Adjust padding
-      );
-    }
- 
    // Helper widget to build an enhanced sensor display row
    Widget _buildSensorRow(BuildContext context, String label, dynamic value, IconData icon, String unit) {
      final primaryColor = AppTheme.getPrimaryColor(context);
