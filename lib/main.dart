@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import flutter_dotenv
 import 'theme.dart';
 import 'models/app_state.dart';
 import 'pages/splash_screen.dart';
@@ -20,6 +21,8 @@ import 'services/arduino_service.dart'; // Import Arduino Service
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([
@@ -27,8 +30,8 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // AI Chat API key hardcoded
-  final String openRouterApiKey = 'AIzaSyBYdaaHhwBcd0FhtURJJjZldCl8tNdWMyg';
+  // Get API key from environment variables
+  final String openRouterApiKey = dotenv.env['OPENROUTER_API_KEY'] ?? '';
 
   runApp(
     MultiProvider(
