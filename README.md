@@ -446,5 +446,5 @@ Our roadmap for Digital EcoHome includes:
 
 <div align="center">
   <p>© 2025 Digital Trailblazers Team - American University of Sharjah</p>
-  Licensed under the CC0-1.0 License See the [LICENSE](LICENSE) file for details.
+  Licensed under the CC0-1.0 License See the [LICENSE](https://github.com/Hamdan-1/Digital-EcoHome-Flutter-App/blob/main/LICENSE) file for details.
 </div>
