@@ -80,10 +80,6 @@ void setup() {
   Serial.println("Serial communication initialized."); // Added diagnostic print
 #endif
 
-  // Initialize built-in LED for WiFi status early
-  pinMode(WHITE_LED_PIN, OUTPUT);
-  digitalWrite(WHITE_LED_PIN, HIGH); // Turn on LED to indicate WiFi connection process
-
 #if DEBUG
   Serial.println("\n\n--- Digital EcoHome System Booting Up ---"); // Added newlines for clarity
 
@@ -216,25 +212,16 @@ void setup() {
 
 #if DEBUG
   Serial.println("System setup complete."); // Added diagnostic print
+// Indicate system readiness with a short beep
+  tone(BUZZER_PIN, 1000); // Play a tone (e.g., 1000 Hz)
+  delay(200);            // for 200 milliseconds
+  noTone(BUZZER_PIN);    // Stop the tone
 #endif
 }
 
 // --- Main Loop ---
 void loop() {
   unsigned long currentMillis = millis(); // Get current time once per loop
-
-  // Handle WiFi status LED blinking
-  if (WiFi.status() == WL_CONNECTED) {
-    if (currentMillis - wifiLedTimer >= WIFI_LED_BLINK_INTERVAL) {
-      wifiLedTimer = currentMillis;
-      wifiLedState = !wifiLedState; // Toggle LED state
-      digitalWrite(WHITE_LED_PIN, wifiLedState ? HIGH : LOW);
-    }
-  } else {
-    // If somehow disconnected after setup, turn LED back on solid
-    digitalWrite(WHITE_LED_PIN, HIGH);
-  }
-
 
   // Listen for incoming clients
   WiFiClient newClient = server.available();

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart'; // Import Provider
 import '../theme.dart';
 import '../widgets/report_charts.dart';
 import '../models/reports/energy_report_model.dart';
+import '../models/app_state.dart' hide EnergyAlert; // Import AppState and hide EnergyAlert
+import '../models/settings/user_preferences.dart'; // Import UserPreferences
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -42,26 +45,31 @@ class _ReportsPageState extends State<ReportsPage>
   }
 
   void _loadData() {
+    // Access UserPreferences from AppState
+    final appState = Provider.of<AppState>(context, listen: false);
+    final userPreferences = appState.appSettings.userPreferences;
+
     // Load appropriate data based on selected time range
     switch (_selectedTimeRange) {
       case 'Day':
-        _reportData = EnergyReportData.generateDailyData();
+        _reportData = EnergyReportData.generateDailyData(userPreferences: userPreferences);
         break;
       case 'Week':
-        _reportData = EnergyReportData.generateWeeklyData();
+        _reportData = EnergyReportData.generateWeeklyData(userPreferences: userPreferences);
         break;
       case 'Month':
-        _reportData = EnergyReportData.generateMonthlyData();
+        _reportData = EnergyReportData.generateMonthlyData(userPreferences: userPreferences);
         break;
       case 'Year':
-        _reportData = EnergyReportData.generateYearlyData();
+        _reportData = EnergyReportData.generateYearlyData(userPreferences: userPreferences);
         break;
     }
 
     // _categoryColorMap initialization moved to build method
 
     // Load tips and alerts
-    _energySavingTips = EnergySavingTip.generateTips();
+    final homeConfiguration = appState.appSettings.homeConfiguration; // Access home configuration
+    _energySavingTips = EnergySavingTip.generateTips(homeConfiguration: homeConfiguration);
     _energyAlerts = EnergyAlert.generateAlerts();
     _deviceEnergyList = DeviceEnergyInfo.generateDeviceList();
   }
@@ -474,7 +482,7 @@ class _ReportsPageState extends State<ReportsPage>
                           children: [
                             _buildStatItem( // Pass theme variables
                               'Cost',
-                              '\$${currentReport.cost.toStringAsFixed(2)}',
+                              'AED${currentReport.cost.toStringAsFixed(2)}',
                               Icons.attach_money,
                               AppTheme.getSuccessColor(context), // Use theme color
                               colorScheme,
@@ -938,7 +946,7 @@ class _ReportsPageState extends State<ReportsPage>
                       Expanded(
                         flex: 2,
                         child: Text(
-                          '\$${device.weeklyCost.toStringAsFixed(2)}',
+                          'AED${device.weeklyCost.toStringAsFixed(2)}',
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurface, // Use theme color
                             fontWeight: FontWeight.w500,
@@ -986,7 +994,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Up to \$${_energySavingTips.fold(0.0, (sum, tip) => sum + tip.potentialSavings).toStringAsFixed(2)} per month',
+                    'Up to AED${_energySavingTips.fold(0.0, (sum, tip) => sum + tip.potentialSavings).toStringAsFixed(2)} per month',
                     style: TextStyle( // Removed const
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1045,7 +1053,7 @@ class _ReportsPageState extends State<ReportsPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Potential Savings: \$${tip.potentialSavings.toStringAsFixed(2)}/month',
+                    'Potential Savings: AED${tip.potentialSavings.toStringAsFixed(2)}/month',
                     style: TextStyle( // Removed const
                       fontWeight: FontWeight.bold,
                       color: AppTheme.getSuccessColor(context), // Use theme color

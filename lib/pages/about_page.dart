@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart'; // Import Provider
 import '../theme.dart'; // Import AppTheme
+import '../models/app_state.dart'; // Import AppState
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -36,6 +38,9 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final appState = Provider.of<AppState>(context); // Access AppState
+    final aboutSettings = appState.appSettings.aboutSettings; // Access AboutSettings
+
 
     return Scaffold(
       appBar: AppBar(
@@ -60,13 +65,13 @@ class _AboutPageState extends State<AboutPage> {
                 context,
                 Icons.numbers,
                 'Version',
-                _packageInfo.version,
+                aboutSettings.appVersion, // Use version from AboutSettings
               ),
               _buildInfoRow(
                 context,
                 Icons.build_circle_outlined,
                 'Build',
-                _packageInfo.buildNumber,
+                aboutSettings.buildNumber, // Use build number from AboutSettings
               ),
               const SizedBox(height: 12.0),
               Text(

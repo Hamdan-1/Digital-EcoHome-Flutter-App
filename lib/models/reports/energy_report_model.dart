@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../settings/user_preferences.dart';
+import '../settings/home_configuration.dart'; // Import HomeConfiguration
 
 class EnergyReportData {
   final DateTime date;
@@ -17,7 +19,7 @@ class EnergyReportData {
     required this.co2Emissions,
   });
 
-  static List<EnergyReportData> generateDailyData() {
+  static List<EnergyReportData> generateDailyData({required UserPreferences userPreferences}) {
     // Generate data for the last 30 days
     final List<EnergyReportData> data = [];
     final now = DateTime.now();
@@ -52,7 +54,7 @@ class EnergyReportData {
             'Dishwasher': (baseUsage + variance) * 0.05,
             'Other': (baseUsage + variance) * 0.05,
           },
-          cost: (baseUsage + variance) * 0.15, // $0.15 per kWh
+          cost: (baseUsage + variance) * userPreferences.energyPricePerKwh,
           co2Emissions: (baseUsage + variance) * 0.85, // 0.85 kg CO2 per kWh
         ),
       );
@@ -61,7 +63,7 @@ class EnergyReportData {
     return data;
   }
 
-  static List<EnergyReportData> generateWeeklyData() {
+  static List<EnergyReportData> generateWeeklyData({required UserPreferences userPreferences}) {
     // Generate data for the last 12 weeks
     final List<EnergyReportData> data = [];
     final now = DateTime.now();
@@ -94,7 +96,7 @@ class EnergyReportData {
             'Dishwasher': (baseUsage + variance) * 0.05,
             'Other': (baseUsage + variance) * 0.05,
           },
-          cost: (baseUsage + variance) * 0.15, // $0.15 per kWh
+          cost: (baseUsage + variance) * userPreferences.energyPricePerKwh,
           co2Emissions: (baseUsage + variance) * 0.85, // 0.85 kg CO2 per kWh
         ),
       );
@@ -103,7 +105,7 @@ class EnergyReportData {
     return data;
   }
 
-  static List<EnergyReportData> generateMonthlyData() {
+  static List<EnergyReportData> generateMonthlyData({required UserPreferences userPreferences}) {
     // Generate data for the last 12 months
     final List<EnergyReportData> data = [];
     final now = DateTime.now();
@@ -144,7 +146,7 @@ class EnergyReportData {
             'Dishwasher': (baseUsage + variance) * 0.05,
             'Other': (baseUsage + variance) * 0.05,
           },
-          cost: (baseUsage + variance) * 0.15, // $0.15 per kWh
+          cost: (baseUsage + variance) * userPreferences.energyPricePerKwh,
           co2Emissions: (baseUsage + variance) * 0.85, // 0.85 kg CO2 per kWh
         ),
       );
@@ -153,7 +155,7 @@ class EnergyReportData {
     return data;
   }
 
-  static List<EnergyReportData> generateYearlyData() {
+  static List<EnergyReportData> generateYearlyData({required UserPreferences userPreferences}) {
     // Generate data for the last 5 years
     final List<EnergyReportData> data = [];
     final now = DateTime.now();
@@ -186,7 +188,7 @@ class EnergyReportData {
             'Dishwasher': (baseUsage + variance) * 0.05,
             'Other': (baseUsage + variance) * 0.05,
           },
-          cost: (baseUsage + variance) * 0.15, // $0.15 per kWh
+          cost: (baseUsage + variance) * userPreferences.energyPricePerKwh,
           co2Emissions: (baseUsage + variance) * 0.85, // 0.85 kg CO2 per kWh
         ),
       );
@@ -209,8 +211,38 @@ class EnergySavingTip {
     required this.potentialSavings,
   });
 
-  static List<EnergySavingTip> generateTips() {
-    return [
+  static List<EnergySavingTip> generateTips({required HomeConfiguration homeConfiguration}) {
+    // Generate tips based on home configuration
+    final List<EnergySavingTip> tips = [];
+
+    // Example: Add a tip about optimizing HVAC based on home size
+    if (homeConfiguration.homeSize > 1500) { // Assuming size is in sq ft
+      tips.add(
+        EnergySavingTip(
+          title: 'Optimize HVAC for Large Home',
+          description:
+              'With a larger home, optimizing your HVAC system is crucial. Ensure regular maintenance and consider smart zoning to save energy.',
+          icon: Icons.home_work,
+          potentialSavings: homeConfiguration.homeSize * 0.03, // Example calculation
+        ),
+      );
+    }
+
+    // Example: Add a tip about reducing appliance usage for more occupants
+    if (homeConfiguration.occupants > 4) {
+       tips.add(
+        EnergySavingTip(
+          title: 'Efficient Appliance Use with More Occupants',
+          description:
+              'With more people, appliances like washing machines and dishwashers are used more often. Use full loads and consider energy-efficient models.',
+          icon: Icons.people,
+          potentialSavings: homeConfiguration.occupants * 5.0, // Example calculation
+        ),
+      );
+    }
+
+    // Add some general tips
+    tips.addAll([
       EnergySavingTip(
         title: 'Optimize Thermostat',
         description:
@@ -246,7 +278,9 @@ class EnergySavingTip {
         icon: Icons.hvac,
         potentialSavings: 52.0,
       ),
-    ];
+    ]);
+
+    return tips;
   }
 }
 

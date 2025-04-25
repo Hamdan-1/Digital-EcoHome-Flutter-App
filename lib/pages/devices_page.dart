@@ -1,3 +1,4 @@
+import 'dart:async'; // Import for Timer
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
@@ -34,6 +35,7 @@ class _DevicesPageState extends State<DevicesPage>
   // bool _isDiscovering = false; // Removed unused field
   AnimationController? _scanAnimationController;
   Animation<double>? _scanAnimation;
+  Timer? _sensorTimer; // Timer for periodic sensor updates
 
   // State for Search and Sort
   final TextEditingController _searchController = TextEditingController();
@@ -81,6 +83,7 @@ class _DevicesPageState extends State<DevicesPage>
     _searchController.dispose();
     _ipController.dispose();
     _lcdController.dispose();
+    _stopSensorTimer(); // Cancel timer on dispose
     super.dispose();
   }
 
@@ -1664,8 +1667,14 @@ class _DevicesPageState extends State<DevicesPage>
   }
 
 
+  // Helper method to stop the sensor timer
+  void _stopSensorTimer() {
+    _sensorTimer?.cancel();
+    _sensorTimer = null;
+  }
+ 
   // --- Arduino Control Section Widget ---
-
+ 
   Widget _buildArduinoControlSection(BuildContext context) {
   // Use Consumer to listen to ArduinoService changes
   return SliverToBoxAdapter(
@@ -1676,6 +1685,17 @@ class _DevicesPageState extends State<DevicesPage>
         final hasError = arduinoService.hasError;
         final errorMessage = arduinoService.errorMessage;
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        // Manage sensor data timer based on connection status
+        if (isConnected && _sensorTimer == null) {
+          // Start timer if connected and timer is not running
+          _sensorTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+            arduinoService.requestSensorUpdate();
+          });
+        } else if (!isConnected && _sensorTimer != null) {
+          // Stop timer if disconnected and timer is running
+          _stopSensorTimer();
+        }
 
         // Reset local UI state if disconnected
         // This prevents showing incorrect states after disconnection
@@ -1855,6 +1875,8 @@ class _DevicesPageState extends State<DevicesPage>
                           ],
                         ),
                         const SizedBox(height: 16),
+                        const Divider(), // Add divider after LCD control
+                        const SizedBox(height: 16),
 
                         // --- Window Servo ---
                         Text('Window Control (0-180): ${(_windowServoValue).round()}', style: Theme.of(context).textTheme.titleMedium),
@@ -1874,6 +1896,8 @@ class _DevicesPageState extends State<DevicesPage>
                           },
                         ),
                         const SizedBox(height: 8),
+                        const Divider(), // Add divider after Window Servo
+                        const SizedBox(height: 16),
 
                         // --- Door Servo ---
                         Row(
@@ -1897,6 +1921,8 @@ class _DevicesPageState extends State<DevicesPage>
                              )
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        const Divider(), // Add divider after Door Servo
                         const SizedBox(height: 16),
 
                         // --- Fan Control ---
@@ -1936,6 +1962,8 @@ class _DevicesPageState extends State<DevicesPage>
                           },
                         ),
                         const SizedBox(height: 16),
+                        const Divider(), // Add divider after Fan Control
+                        const SizedBox(height: 16),
 
                         // --- LED Control ---
                         Text('LED Control:', style: Theme.of(context).textTheme.titleMedium),
@@ -1970,6 +1998,8 @@ class _DevicesPageState extends State<DevicesPage>
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        const Divider(), // Add divider after LED Control
                         const SizedBox(height: 16),
 
                         // --- Buzzer Control ---
@@ -2013,16 +2043,14 @@ class _DevicesPageState extends State<DevicesPage>
                 ),
                 const SizedBox(height: 8),
                 if (isConnected)
-                  Wrap( // Use Wrap for flexible layout
-                    spacing: 12.0, // Horizontal space between items
-                    runSpacing: 8.0, // Vertical space between lines
-                    // Manually create chips for each sensor from the SensorData object
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSensorChip(context, 'GAS', sensorData.gas, Icons.gas_meter_outlined),
-                      _buildSensorChip(context, 'LIGHT', sensorData.light, Icons.lightbulb_outline),
-                      _buildSensorChip(context, 'SOIL', sensorData.soil, Icons.grass),
-                      _buildSensorChip(context, 'WATER', sensorData.water, Icons.water_drop_outlined),
-                      _buildSensorChip(context, 'PIR', sensorData.pir, Icons.directions_run),
+                      _buildSensorRow(context, 'Gas Level', sensorData.gas, Icons.gas_meter_outlined, ' units'), // Assuming 'units' is appropriate, adjust if needed
+                      _buildSensorRow(context, 'Light Level', sensorData.light, Icons.lightbulb_outline, ' units'), // Assuming 'units' is appropriate, adjust if needed
+                      _buildSensorRow(context, 'Soil Moisture', sensorData.soil, Icons.grass, ' units'), // Assuming 'units' is appropriate, adjust if needed
+                      _buildSensorRow(context, 'Water Level', sensorData.water, Icons.water_drop_outlined, ' units'), // Assuming 'units' is appropriate, adjust if needed
+                      _buildSensorRow(context, 'Motion (PIR)', sensorData.pir, Icons.directions_run, ''), // PIR handled with text, no unit
                     ],
                   )
                 else
@@ -2030,44 +2058,101 @@ class _DevicesPageState extends State<DevicesPage>
                      'Connect to Arduino to view sensor readings.',
                      style: TextStyle(color: AppTheme.getTextSecondaryColor(context)),
                    ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  );
-  }
-
-  // Helper to get icons for sensor keys
-  IconData _getSensorIcon(String key) {
-    switch (key) {
-      case 'GAS': return Icons.gas_meter_outlined;
-      case 'LIGHT': return Icons.lightbulb_outline;
-      case 'SOIL': return Icons.grass; // Placeholder
-      case 'WATER': return Icons.water_drop_outlined;
-      case 'PIR': return Icons.directions_run; // Placeholder for motion
-      default: return Icons.help_outline;
+               ],
+             ),
+           ),
+         );
+       },
+     ),
+   );
+   }
+ 
+   // Helper to get icons for sensor keys (kept for potential future use or reference)
+   IconData _getSensorIcon(String key) {
+     switch (key) {
+       case 'GAS': return Icons.gas_meter_outlined;
+       case 'LIGHT': return Icons.lightbulb_outline;
+       case 'SOIL': return Icons.grass; // Placeholder
+       case 'WATER': return Icons.water_drop_outlined;
+       case 'PIR': return Icons.directions_run; // Placeholder for motion
+       default: return Icons.help_outline;
+     }
+   }
+ 
+   // Helper widget to build a sensor chip consistently (kept for potential future use or reference)
+   Widget _buildSensorChip(BuildContext context, String label, dynamic value, IconData icon) {
+      final primaryColor = AppTheme.getPrimaryColor(context);
+      return Chip(
+        avatar: Icon(
+          icon,
+          color: primaryColor,
+          size: 18,
+        ),
+        label: Text(
+          '$label: $value', // Display label and value
+          style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
+        ),
+        backgroundColor: primaryColor.withAlpha(30),
+        side: BorderSide(color: primaryColor.withAlpha(80)),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Adjust padding
+      );
     }
-  }
-
-  // Helper widget to build a sensor chip consistently
-  Widget _buildSensorChip(BuildContext context, String label, dynamic value, IconData icon) {
+ 
+   // Helper widget to build an enhanced sensor display row
+   Widget _buildSensorRow(BuildContext context, String label, dynamic value, IconData icon, String unit) {
      final primaryColor = AppTheme.getPrimaryColor(context);
-     return Chip(
-       avatar: Icon(
-         icon,
-         color: primaryColor,
-         size: 18,
+     final textColor = AppTheme.getTextPrimaryColor(context);
+     final secondaryTextColor = AppTheme.getTextSecondaryColor(context);
+ 
+     String displayValue = value.toString();
+     String valueDescription = '';
+ 
+     // Add specific descriptions for PIR sensor
+     if (label == 'Motion (PIR)') {
+       displayValue = value == 1 ? 'Detected' : 'Clear';
+       valueDescription = ''; // No unit needed
+     } else {
+        valueDescription = unit; // Use provided unit
+     }
+ 
+ 
+     return Padding(
+       padding: const EdgeInsets.symmetric(vertical: 4.0), // Add vertical padding between rows
+       child: Row(
+         children: [
+           Icon(icon, color: primaryColor, size: 20),
+           const SizedBox(width: 12),
+           Expanded(
+             child: Text(
+               label,
+               style: TextStyle(
+                 fontWeight: FontWeight.w600,
+                 color: textColor,
+                 fontSize: 14,
+               ),
+             ),
+           ),
+           Text(
+             displayValue,
+             style: TextStyle(
+               fontWeight: FontWeight.bold,
+               color: primaryColor, // Highlight value
+               fontSize: 14,
+             ),
+           ),
+           if (valueDescription.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Text(
+                valueDescription,
+                style: TextStyle(
+                  color: secondaryTextColor,
+                  fontSize: 12,
+                ),
+              ),
+           ],
+         ],
        ),
-       label: Text(
-         '$label: $value', // Display label and value
-         style: TextStyle(color: AppTheme.getTextPrimaryColor(context)),
-       ),
-       backgroundColor: primaryColor.withAlpha(30),
-       side: BorderSide(color: primaryColor.withAlpha(80)),
-       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Adjust padding
      );
    }
-
-} // End of _DevicesPageState class
+ 
+ } // End of _DevicesPageState class

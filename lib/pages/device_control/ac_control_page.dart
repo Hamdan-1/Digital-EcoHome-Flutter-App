@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../models/app_state.dart';
 import '../../models/data_status.dart'; // Import DataStatus
 import '../../theme.dart';
+import '../../models/settings/user_preferences.dart'; // Import UserPreferences
 import '../../widgets/usage_chart.dart';
 import '../../widgets/optimized_loading_indicator.dart';
 import '../../utils/error_handler.dart'; // Import ErrorHandler
@@ -168,9 +169,11 @@ class _ACControlPageState extends State<ACControlPage> {
 
   // Extracted method to build the main UI when the device is found
   Widget _buildDeviceControls(BuildContext context, AppState appState, Device device) {
+    final userPreferences = appState.appSettings.userPreferences; // Access user preferences
+
      return Scaffold(
-      appBar: AppBar(
-        title: Text(device.name),
+       appBar: AppBar(
+         title: Text(device.name),
         actions: [
           if (_settingsChanged && !_isUpdating) // Show save only if changed and not updating
             IconButton(
@@ -198,7 +201,7 @@ class _ACControlPageState extends State<ACControlPage> {
             _buildStatusCard(device),
             const SizedBox(height: 20),
             // Temperature control
-            _buildTemperatureControl(device),
+            _buildTemperatureControl(device, userPreferences), // Pass user preferences
             const SizedBox(height: 20),
             // Fan speed and mode selection
             _buildControlOptions(device),
@@ -354,7 +357,14 @@ class _ACControlPageState extends State<ACControlPage> {
     }
   }
 
-  Widget _buildTemperatureControl(Device device) {
+  Widget _buildTemperatureControl(Device device, UserPreferences userPreferences) {
+    // Determine temperature unit and values based on user preferences
+    final isCelsius = userPreferences.temperatureUnit == 'Celsius';
+    final displayTemperature = isCelsius ? _temperature : (_temperature * 9 / 5 + 32).round();
+    final temperatureUnitLabel = isCelsius ? 'Celsius' : 'Fahrenheit';
+    final minTemp = isCelsius ? 16 : (16 * 9 / 5 + 32).round();
+    final maxTemp = isCelsius ? 30 : (30 * 9 / 5 + 32).round();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -407,7 +417,7 @@ class _ACControlPageState extends State<ACControlPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '$_temperature°',
+                          '$displayTemperature°',
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
@@ -418,19 +428,19 @@ class _ACControlPageState extends State<ACControlPage> {
                           ),
                         ),
                         Text(
-                          'Celsius',
+                          temperatureUnitLabel,
                           style: TextStyle(
                             fontSize: 14,
                             color:
                                 device.isActive
                                     ? AppTheme.textSecondaryColor
                                     : Theme.of(context).disabledColor, // Use theme color
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
+                 ),
 
                 const SizedBox(width: 16),
 
@@ -454,48 +464,49 @@ class _ACControlPageState extends State<ACControlPage> {
             const SizedBox(height: 16),
             // Temperature slider
             Slider(
-              min: 16,
-              max: 30,
-              divisions: 14,
-              value: _temperature.toDouble(),
+              min: minTemp.toDouble(),
+              max: maxTemp.toDouble(),
+              divisions: isCelsius ? 14 : (maxTemp - minTemp), // Adjust divisions for Fahrenheit
+              value: displayTemperature.toDouble(),
               activeColor:
                   device.isActive ? _getTemperatureColor() : Theme.of(context).disabledColor, // Use theme color
               inactiveColor: Theme.of(context).colorScheme.surfaceContainerHighest, // Use theme color
               onChanged:
                   !device.isActive
-                      ? null
-                      : (value) {
-                        setState(() {
-                          _temperature = value.round();
-                          _settingsChanged = true;
-                        });
-                      },
-            ),
-            // Temperature range labels
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '16°C',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                  const Text(
-                    '30°C',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+                       ? null
+                       : (value) {
+                         setState(() {
+                           // Convert back to Celsius before storing
+                           _temperature = isCelsius ? value.round() : ((value.round() - 32) * 5 / 9).round();
+                           _settingsChanged = true;
+                         });
+                       },
+             ),
+             // Temperature range labels
+             Padding(
+               padding: const EdgeInsets.symmetric(horizontal: 16.0),
+               child: Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text(
+                     '$minTemp°$temperatureUnitLabel',
+                     style: TextStyle(
+                       fontSize: 12,
+                       color: AppTheme.textSecondaryColor,
+                     ),
+                   ),
+                   Text(
+                     '$maxTemp°$temperatureUnitLabel',
+                     style: TextStyle(
+                       fontSize: 12,
+                       color: AppTheme.textSecondaryColor,
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+           ],
+         ),
       ),
     );
   }

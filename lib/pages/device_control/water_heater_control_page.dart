@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../models/app_state.dart'; // Using the original Device class
 import '../../models/data_status.dart';
 import '../../theme.dart';
+import '../../models/settings/user_preferences.dart'; // Import UserPreferences
 import '../../widgets/optimized_loading_indicator.dart';
 import '../../utils/error_handler.dart';
 
@@ -106,6 +107,17 @@ class _WaterHeaterControlPageState extends State<WaterHeaterControlPage> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final userPreferences = appState.appSettings.userPreferences; // Access user preferences
+
+    // Determine temperature unit and values based on user preferences
+    final isCelsius = userPreferences.temperatureUnit == 'Celsius';
+    // Convert stored Fahrenheit temperature to Celsius if needed for display
+    final displayTemperature = isCelsius ? ((_temperature - 32) * 5 / 9).round() : _temperature;
+    final temperatureUnitLabel = isCelsius ? '°C' : '°F';
+    final minTemp = isCelsius ? 38 : 100; // Approx 38C is 100F
+    final maxTemp = isCelsius ? 60 : 140; // Approx 60C is 140F
+    final divisions = isCelsius ? (60 - 38) : (140 - 100) ~/ 5; // Adjust divisions for Celsius/Fahrenheit steps
+
 
     // Handle case where device isn't found
     if (appState.devicesStatus == DataStatus.loading) {
@@ -294,7 +306,7 @@ class _WaterHeaterControlPageState extends State<WaterHeaterControlPage> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '$_temperature°F',
+                            '$displayTemperature$temperatureUnitLabel',
                             style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -303,10 +315,11 @@ class _WaterHeaterControlPageState extends State<WaterHeaterControlPage> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
-                            onPressed: device.isActive && _temperature < 140
+                            onPressed: device.isActive && displayTemperature < maxTemp
                                 ? () {
                                     setState(() {
-                                      _temperature += 5;
+                                      // Convert back to Fahrenheit before storing
+                                      _temperature = isCelsius ? ((displayTemperature + 1) * 9 / 5 + 32).round() : displayTemperature + 5;
                                       _settingsChanged = true;
                                     });
                                   }
@@ -323,14 +336,15 @@ class _WaterHeaterControlPageState extends State<WaterHeaterControlPage> {
                           overlayColor: AppTheme.getPrimaryColor(context).withAlpha(26),
                         ),
                         child: Slider(
-                          min: 100,
-                          max: 140,
-                          divisions: 8,
-                          value: _temperature.toDouble(),
+                          min: minTemp.toDouble(),
+                          max: maxTemp.toDouble(),
+                          divisions: divisions,
+                          value: displayTemperature.toDouble(),
                           onChanged: device.isActive
                               ? (value) {
                                   setState(() {
-                                    _temperature = value.round();
+                                    // Convert back to Fahrenheit before storing
+                                    _temperature = isCelsius ? ((value.round() - 32) * 5 / 9).round() : value.round();
                                     _settingsChanged = true;
                                   });
                                 }
