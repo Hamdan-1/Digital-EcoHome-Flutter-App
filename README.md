@@ -116,7 +116,6 @@ The project is organized into several directories and files, each serving a spec
 - [User Manual](#user-manual)
 - [System Requirements](#system-requirements)
 - [Future Development](#future-development)
-- [Awards and Recognition](#awards-and-recognition)
 - [Contact Information](#contact-information)
 
 ---
